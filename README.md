@@ -61,6 +61,5 @@ output/h3_long_upscaled/
 - MiniMax H3 AV latents only, batch size 1
 - 24 fps output
 - H.264/AAC MP4 output
-- BasicGuider sampling, matching the existing H3 multishot path
 - `width` and `height` must match a connected `initial_latent`
-- Long latent upscaling requires the separately installed H3 latent upscaler custom node and model weights
+- Long latent upscaling requires the separately installed H3 latent upscaler custom node and model weights. **Experimental and untested.**

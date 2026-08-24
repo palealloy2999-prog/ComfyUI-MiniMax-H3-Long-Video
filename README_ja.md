@@ -80,6 +80,5 @@ output/h3_long_upscaled/
 - MiniMax H3のAV LATENT専用、バッチサイズ1
 - 出力は24 fps固定
 - H.264/AACのMP4出力
-- 既存のH3 multishot経路と同様のBasicGuiderサンプリング
 - `initial_latent` を接続する場合、`width` と `height` をそのLATENTの解像度に合わせる必要があります
-- 長尺LATENTアップスケールには、H3 latent upscalerカスタムノードとモデルウェイトの別途インストールが必要です
+- 長尺LATENTアップスケールには、H3 latent upscalerカスタムノードとモデルウェイトの別途インストールが必要です。**※実験段階。未テストです。**
