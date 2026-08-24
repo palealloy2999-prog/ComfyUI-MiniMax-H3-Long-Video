@@ -126,13 +126,53 @@ Action-editing rhythm: chase -> insert -> chase.
         self.assertNotIn("Run forward", sliced)
         self.assertNotIn("stop", sliced)
 
-    def test_later_shots_require_increasing_timestamps(self):
-        missing = "integrated_multimodal_description: [Shot 1] A. [Shot 2] B."
-        with self.assertRaisesRegex(ValueError, "needs an At"):
-            slice_prompt(missing, 0.0, 10.0)
+    def test_untimed_shots_are_distributed_across_segments(self):
+        prompt = (
+            "integrated_multimodal_description: [Shot 1] A. [Shot 2] B. "
+            "[Shot 3] C. [Shot 4] D. [Shot 5] E. [Shot 6] F."
+        )
+        first = slice_prompt(prompt, 0.0, 5.0, segment_index=0, segment_count=2)
+        second = slice_prompt(prompt, 5.0, 10.0, 22 / 24, 1, 2)
+        self.assertIn("A.", first)
+        self.assertIn("C.", first)
+        self.assertNotIn("D.", first)
+        self.assertNotIn("C.", second)
+        self.assertIn("D.", second)
+        self.assertIn("F.", second)
+        self.assertIn("[Shot 2] At 00:00.917", second)
+
+    def test_fewer_untimed_shots_are_spread_over_the_full_timeline(self):
+        prompt = "[Shot 1] Start. [Shot 2] Middle. [Shot 3] Finish."
+        sliced = [
+            slice_prompt(prompt, index * 5.0, (index + 1) * 5.0,
+                         segment_index=index, segment_count=5)
+            for index in range(5)
+        ]
+        self.assertIn("Start.", sliced[0])
+        self.assertIn("Middle.", sliced[2])
+        self.assertIn("Finish.", sliced[4])
+
+    def test_untimed_shots_are_interpolated_between_timestamped_shots(self):
+        prompt = (
+            "[Shot 1] Start. [Shot 2] First gap. "
+            "[Shot 3] At 00:06.000, first anchor. [Shot 4] Second gap. "
+            "[Shot 5] At 00:10.000, second anchor. [Shot 6] Tail."
+        )
+        first = slice_prompt(prompt, 0.0, 5.0, timeline_duration_seconds=15.0)
+        second = slice_prompt(prompt, 5.0, 10.0, timeline_duration_seconds=15.0)
+        third = slice_prompt(prompt, 10.0, 15.0, 22 / 24,
+                             timeline_duration_seconds=15.0)
+        self.assertIn("[Shot 2] At 00:03.000, First gap.", first)
+        self.assertIn("[Shot 1] At 00:01.000, first anchor.", second)
+        self.assertIn("[Shot 2] At 00:03.000, Second gap.", second)
+        self.assertIn("[Shot 2] At 00:00.917, second anchor.", third)
+        self.assertIn("[Shot 3] At 00:03.417, Tail.", third)
+
+    def test_reversed_timestamps_are_rejected_even_with_untimed_shots_between(self):
         reversed_times = (
             "integrated_multimodal_description: [Shot 1] A. "
-            "[Shot 2] At 00:05.000, B. [Shot 3] At 00:04.000, C."
+            "[Shot 2] At 00:05.000, B. [Shot 3] C. "
+            "[Shot 4] At 00:04.000, D."
         )
         with self.assertRaisesRegex(ValueError, "strictly increasing"):
             slice_prompt(reversed_times, 0.0, 10.0)

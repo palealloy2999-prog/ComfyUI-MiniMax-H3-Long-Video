@@ -14,16 +14,18 @@ import comfy.nested_tensor
 import comfy.utils
 import folder_paths
 import node_helpers
+import nodes as comfy_nodes
 from comfy_api.latest import ComfyExtension, InputImpl, io, ui
 from comfy_extras import nodes_custom_sampler as custom_sampler
 from comfy_extras import nodes_minimax_h3 as h3
 from comfy_extras.nodes_audio import vae_decode_audio
 from typing_extensions import override
 
-from .timeline import FPS, plan_segments, slice_prompt
+from .timeline import FPS, Segment, plan_segments, slice_prompt
 
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
+UPSCALE_SCHEMA_VERSION = 1
 
 
 _PATTERN = re.compile(r"%([^%]+)%")
@@ -170,6 +172,126 @@ def _output_paths(cache_name, resume, width, height):
     project.mkdir(parents=True, exist_ok=True)
     (project / "latents").mkdir(exist_ok=True)
     return project, master_path, relative_folder
+
+
+def _source_bundle(source_path):
+    output_root = Path(folder_paths.get_output_directory()).resolve()
+    candidate = Path(source_path.rstrip("/\\"))
+    if not candidate.is_absolute():
+        candidate = output_root / candidate
+    candidate = candidate.resolve()
+    if not folder_paths.is_within_directory(str(output_root), str(candidate)):
+        raise ValueError("source_path must stay inside the ComfyUI output folder")
+    if candidate.is_file():
+        if candidate.name not in ("manifest.json", "master.mp4"):
+            raise ValueError("source_path must point to a Long H3 bundle, manifest.json, or master.mp4")
+        candidate = candidate.parent
+    manifest_path = candidate / "manifest.json"
+    if not manifest_path.is_file():
+        raise ValueError("source_path does not contain a Long H3 manifest.json")
+    return candidate, manifest_path
+
+
+def _manifest_segments(source, manifest):
+    if manifest.get("status") != "complete":
+        raise ValueError("source Long H3 bundle is not complete")
+    entries = manifest.get("segments")
+    if not isinstance(entries, list) or not entries:
+        raise ValueError("source Long H3 manifest has no segments")
+
+    segments = []
+    checkpoints = []
+    expected_index = 0
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get("index") != expected_index:
+            raise ValueError("source Long H3 manifest has invalid segment ordering")
+        filename = entry.get("file")
+        if not isinstance(filename, str) or Path(filename).name != filename:
+            raise ValueError("source Long H3 manifest has an invalid segment filename")
+        checkpoint = (source / "latents" / filename).resolve()
+        if checkpoint.parent != (source / "latents").resolve() or not checkpoint.is_file():
+            raise ValueError("source Long H3 checkpoint is missing: {}".format(filename))
+        raw_frames = entry.get("raw_frames")
+        context_frames = entry.get("context_frames")
+        output_start = entry.get("output_start")
+        output_frames = entry.get("output_frames")
+        if output_start is None or output_frames is None:
+            timeline_start = entry.get("timeline_start")
+            timeline_end = entry.get("timeline_end")
+            if not all(isinstance(value, (int, float)) for value in (
+                    timeline_start, timeline_end)):
+                raise ValueError("source Long H3 manifest has invalid segment timing")
+            output_start = round(timeline_start * FPS)
+            output_frames = round((timeline_end - timeline_start) * FPS)
+        if not all(isinstance(value, (int, float)) for value in (
+                output_start, output_frames, raw_frames, context_frames)):
+            raise ValueError("source Long H3 manifest has invalid segment timing")
+        if (raw_frames < 1 or raw_frames % 17 != 5 or
+                context_frames not in (0, 22, 39) or output_frames < 1 or
+                output_frames > raw_frames - context_frames or
+                output_start != (segments[-1].output_start + segments[-1].output_frames if segments else 0)):
+            raise ValueError("source Long H3 manifest has invalid segment lengths")
+        segments.append(Segment(
+            expected_index, int(raw_frames), int(context_frames),
+            int(output_start), int(output_frames)))
+        checkpoints.append(checkpoint)
+        expected_index += 1
+    return segments, checkpoints
+
+
+def _upscaler_models():
+    model_folder = "latent_upscale_models"
+    if model_folder not in folder_paths.folder_names_and_paths:
+        folder_paths.add_model_folder_path(
+            model_folder, os.path.join(folder_paths.models_dir, model_folder))
+    models = [
+        name for name in folder_paths.get_filename_list(model_folder)
+        if Path(name).suffix.lower() in (".pth", ".safetensors")
+    ]
+    return models or ["(no H3 latent upscaler models found)"]
+
+
+def _upscaler_model_path(model_name):
+    if Path(model_name).suffix.lower() not in (".pth", ".safetensors"):
+        raise ValueError("select a .pth or .safetensors H3 latent upscaler model")
+    path = folder_paths.get_full_path("latent_upscale_models", model_name)
+    if path is None:
+        raise ValueError("H3 latent upscaler model was not found: {}".format(model_name))
+    return Path(path)
+
+
+def _file_fingerprint(path):
+    stat = path.stat()
+    return str(stat.st_size), str(stat.st_mtime_ns)
+
+
+def _upscale_metadata(source_checkpoint, model_path, model_name, target_width,
+                      target_height, align, device, precision, segment):
+    source_size, source_mtime = _file_fingerprint(source_checkpoint)
+    model_size, model_mtime = _file_fingerprint(model_path)
+    return {
+        "upscale_schema": UPSCALE_SCHEMA_VERSION,
+        "source_file": source_checkpoint.name,
+        "source_size": source_size,
+        "source_mtime_ns": source_mtime,
+        "model_name": model_name,
+        "model_size": model_size,
+        "model_mtime_ns": model_mtime,
+        "target_width": target_width,
+        "target_height": target_height,
+        "align": align,
+        "device": device,
+        "precision": precision,
+        "index": segment.index,
+        "raw_frames": segment.raw_frames,
+        "context_frames": segment.context_frames,
+        "output_start": segment.output_start,
+        "output_frames": segment.output_frames,
+    }
+
+
+def _upscale_metadata_matches(metadata, expected):
+    return all(metadata.get(key) == str(value) for key, value in expected.items())
 
 
 def _atomic_json(path, data):
@@ -336,6 +458,8 @@ def _manifest_segment(segment, status, checkpoint, prompt_hash):
         "index": segment.index,
         "status": status,
         "file": checkpoint.name,
+        "output_start": segment.output_start,
+        "output_frames": segment.output_frames,
         "timeline_start": segment.output_start / FPS,
         "timeline_end": (segment.output_start + segment.output_frames) / FPS,
         "prompt_window_start": segment.prompt_start_seconds,
@@ -525,6 +649,9 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
                 segment.prompt_start_seconds,
                 segment.prompt_end_seconds,
                 segment.context_frames / FPS,
+                segment.index,
+                len(segments),
+                length / FPS,
             )
             for segment in segments
         ]
@@ -538,6 +665,8 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
         manifest = {
             "schema": SCHEMA_VERSION,
             "status": "sampling",
+            "fps": FPS,
+            "latent_format": "minimax_h3_av",
             "width": width,
             "height": height,
             "length": length,
@@ -620,10 +749,187 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
         return io.NodeOutput(video, last_latent, str(master_path), completed, ui=preview)
 
 
+class MiniMaxH3LongLatentUpscale(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3LongLatentUpscale",
+            display_name="MiniMax H3 Long Latent Upscale & Assemble",
+            category="sampling/minimax",
+            description="Upscale Long H3 AV latent checkpoints one at a time and assemble a new MP4 without loading the full movie into memory.",
+            is_output_node=True,
+            inputs=[
+                io.Vae.Input("vae"),
+                io.Vae.Input("audio_vae"),
+                io.String.Input("source_path", default="h3_long_video",
+                                tooltip="Output-relative Long H3 bundle folder, manifest.json, or master.mp4. An absolute path is accepted only inside ComfyUI's output folder."),
+                io.Combo.Input("model_name", options=_upscaler_models()),
+                io.Int.Input("target_width", default=1344, min=32, max=8192, step=32),
+                io.Int.Input("target_height", default=768, min=32, max=8192, step=32),
+                io.Int.Input("align", default=2, min=2, max=64, step=2,
+                             tooltip="Target latent-grid alignment. 2 preserves typical Long H3 dimensions that are multiples of 32 pixels."),
+                io.Combo.Input("device", options=["cuda", "cpu"], default="cuda"),
+                io.Combo.Input("precision", options=["fp32", "fp16", "bf16"], default="fp16"),
+                io.String.Input("output_cache_name", default="h3_long_upscaled",
+                                tooltip="Output-relative bundle folder for upscaled checkpoints and master.mp4. Save Video patterns are supported."),
+                io.Boolean.Input("resume", default=False,
+                                 tooltip="Reuse upscaled checkpoints whose source and settings still match."),
+                io.Int.Input("reroll_from_segment", default=-1, min=-1, max=999, step=1,
+                             tooltip="With resume enabled: -1 processes only missing or incompatible segments; N regenerates N onward."),
+                io.Int.Input("crf", default=18, min=0, max=51, step=1, advanced=True),
+            ],
+            hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo],
+            outputs=[
+                io.Video.Output(display_name="video"),
+                io.Latent.Output(display_name="last_latent"),
+                io.String.Output(display_name="master_path"),
+                io.Int.Output(display_name="segment_count"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, vae, audio_vae, source_path, model_name, target_width,
+                target_height, align, device, precision, output_cache_name,
+                resume, reroll_from_segment, crf):
+        hidden = cls.hidden
+        prompt = hidden.prompt if hidden is not None else None
+        extra_pnginfo = hidden.extra_pnginfo if hidden is not None else None
+        source_path = _expand_cache_name(source_path, prompt, extra_pnginfo)
+        output_cache_name = _expand_cache_name(
+            output_cache_name, prompt, extra_pnginfo)
+
+        source, source_manifest_path = _source_bundle(source_path)
+        with source_manifest_path.open("r", encoding="utf-8") as handle:
+            source_manifest = json.load(handle)
+        if source_manifest.get("fps", FPS) != FPS:
+            raise ValueError("source Long H3 bundle must use 24 fps")
+        if source_manifest.get("latent_format", "minimax_h3_av") != "minimax_h3_av":
+            raise ValueError("source manifest is not a MiniMax H3 AV latent bundle")
+        segments, source_checkpoints = _manifest_segments(source, source_manifest)
+
+        model_path = _upscaler_model_path(model_name)
+        upscaler_class = comfy_nodes.NODE_CLASS_MAPPINGS.get(
+            "H3LatentUpscalerNodeResolution")
+        if upscaler_class is None:
+            raise ValueError(
+                "install Comfyui_Minimax_h3_latent_Upscaler and restart ComfyUI")
+        upscaler = upscaler_class()
+
+        project, master_path, relative_folder = _output_paths(
+            output_cache_name, resume, target_width, target_height)
+        if project == source:
+            raise ValueError("output_cache_name must be different from the source bundle")
+        checkpoints = [
+            project / "latents" / "segment_{:04d}.safetensors".format(segment.index)
+            for segment in segments
+        ]
+        manifest = {
+            "schema": UPSCALE_SCHEMA_VERSION,
+            "status": "upscaling",
+            "fps": FPS,
+            "latent_format": "minimax_h3_av",
+            "source": os.path.relpath(source, Path(folder_paths.get_output_directory()).resolve()),
+            "source_schema": source_manifest.get("schema"),
+            "source_width": source_manifest.get("width"),
+            "source_height": source_manifest.get("height"),
+            "length": source_manifest.get("length"),
+            "requested_width": target_width,
+            "requested_height": target_height,
+            "align": align,
+            "model_name": model_name,
+            "device": device,
+            "precision": precision,
+            "segments": [],
+        }
+        _atomic_json(project / "manifest.json", manifest)
+
+        actual_width = None
+        actual_height = None
+        last_latent = None
+        completed = 0
+        for segment, source_checkpoint, checkpoint in zip(
+                segments, source_checkpoints, checkpoints):
+            expected = _upscale_metadata(
+                source_checkpoint, model_path, model_name, target_width,
+                target_height, align, device, precision, segment)
+            may_reuse = resume and (
+                reroll_from_segment < 0 or segment.index < reroll_from_segment)
+            status = "upscaled"
+            latent = None
+            upscaled = None
+            if may_reuse and checkpoint.exists():
+                cached, metadata = _load_segment(checkpoint)
+                if _upscale_metadata_matches(metadata, expected):
+                    upscaled = cached
+                    status = "reused"
+                elif reroll_from_segment >= 0:
+                    raise ValueError(
+                        "upscaled segment {} no longer matches; reroll from this segment or earlier".format(
+                            segment.index))
+
+            if upscaled is None:
+                latent, _ = _load_segment(source_checkpoint)
+                upscaled = upscaler.run(
+                    latent, model_name, target_width, target_height,
+                    align, device, precision)[0]
+                _streams(upscaled)
+                _save_segment(checkpoint, upscaled, expected)
+
+            video_latent, audio_latent = _streams(upscaled)
+            segment_width = video_latent.shape[-1] * 16
+            segment_height = video_latent.shape[-2] * 16
+            if actual_width is None:
+                actual_width = segment_width
+                actual_height = segment_height
+            elif segment_width != actual_width or segment_height != actual_height:
+                raise ValueError("upscaled H3 segments do not have a consistent resolution")
+
+            completed += 1
+            manifest["segments"].append({
+                "index": segment.index,
+                "status": status,
+                "file": checkpoint.name,
+                "source_file": source_checkpoint.name,
+                "output_start": segment.output_start,
+                "output_frames": segment.output_frames,
+                "timeline_start": segment.output_start / FPS,
+                "timeline_end": (segment.output_start + segment.output_frames) / FPS,
+                "raw_frames": segment.raw_frames,
+                "context_frames": segment.context_frames,
+            })
+            _atomic_json(project / "manifest.json", manifest)
+            if segment.index == segments[-1].index:
+                last_latent = _cpu_latent(upscaled)
+            latent = None
+            upscaled = None
+            video_latent = None
+            audio_latent = None
+
+        if last_latent is None or actual_width is None or actual_height is None:
+            raise RuntimeError("MiniMax H3 Long Latent Upscale produced no segments")
+        manifest["width"] = actual_width
+        manifest["height"] = actual_height
+        manifest["status"] = "decoding"
+        _atomic_json(project / "manifest.json", manifest)
+        _write_master(
+            master_path, checkpoints, segments, vae, audio_vae,
+            actual_width, actual_height, crf)
+        manifest["status"] = "complete"
+        manifest["master"] = master_path.name
+        _atomic_json(project / "manifest.json", manifest)
+
+        video = InputImpl.VideoFromFile(str(master_path))
+        preview = ui.PreviewVideo([
+            ui.SavedResult(master_path.name, relative_folder, io.FolderType.output)
+        ])
+        return io.NodeOutput(
+            video, last_latent, str(master_path), completed, ui=preview)
+
+
 class MiniMaxH3LongVideoExtension(ComfyExtension):
     @override
     async def get_node_list(self):
-        return [MiniMaxH3LongReferenceSampler]
+        return [MiniMaxH3LongReferenceSampler, MiniMaxH3LongLatentUpscale]
 
 
 async def comfy_entrypoint():

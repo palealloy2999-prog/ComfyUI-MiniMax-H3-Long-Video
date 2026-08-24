@@ -1,3 +1,4 @@
+import json
 import sys
 import tempfile
 import unittest
@@ -16,7 +17,7 @@ from minimax_h3_long_video import nodes as long_nodes
 from minimax_h3_long_video import timeline
 from minimax_h3_long_video.nodes import (
     _add_continuation_guide, _expand_cache_name, _load_segment, _output_paths,
-    _save_segment, _write_master,
+    _save_segment, _write_master, MiniMaxH3LongLatentUpscale,
 )
 from minimax_h3_long_video.timeline import plan_segments
 
@@ -45,6 +46,14 @@ class BackendTests(unittest.TestCase):
         self.assertNotIn("filename_prefix", input_ids)
         self.assertIn(long_nodes.io.Hidden.prompt, schema.hidden)
         self.assertIn(long_nodes.io.Hidden.extra_pnginfo, schema.hidden)
+
+        upscale_schema = MiniMaxH3LongLatentUpscale.define_schema()
+        upscale_inputs = [input.id for input in upscale_schema.inputs]
+        self.assertEqual(upscale_schema.node_id, "MiniMaxH3LongLatentUpscale")
+        self.assertIn("source_path", upscale_inputs)
+        self.assertIn("output_cache_name", upscale_inputs)
+        self.assertIn("target_width", upscale_inputs)
+        self.assertIn("target_height", upscale_inputs)
 
     def test_cache_name_expands_node_input_pattern(self):
         prompt = {
@@ -180,6 +189,96 @@ class BackendTests(unittest.TestCase):
                 first_frame = next(container.decode(video=0)).to_ndarray(format="rgb24")
                 self.assertGreater(first_frame.mean(), 80)
 
+    def test_manifest_upscale_processes_and_reuses_segments_one_at_a_time(self):
+        class FakeUpscaler:
+            calls = 0
+
+            def run(self, latent, model_name, width, height, align, device, precision):
+                self.__class__.calls += 1
+                video, audio = latent["samples"].unbind()
+                upscaled = video.repeat_interleave(2, dim=-2).repeat_interleave(2, dim=-1)
+                return ({
+                    "samples": long_nodes.comfy.nested_tensor.NestedTensor((upscaled, audio)),
+                },)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            destination = root / "upscaled"
+            (source / "latents").mkdir(parents=True)
+            (destination / "latents").mkdir(parents=True)
+            segments = plan_segments(80, 22, False, 73)
+            entries = []
+            for segment in segments:
+                latent, _ = h3._empty_av_latent(32, 32, segment.raw_frames)
+                checkpoint = source / "latents" / "segment_{:04d}.safetensors".format(segment.index)
+                _save_segment(checkpoint, latent, {"schema": 9})
+                entries.append({
+                    "index": segment.index,
+                    "file": checkpoint.name,
+                    "output_start": segment.output_start,
+                    "output_frames": segment.output_frames,
+                    "timeline_start": segment.output_start / 24,
+                    "timeline_end": (segment.output_start + segment.output_frames) / 24,
+                    "raw_frames": segment.raw_frames,
+                    "context_frames": segment.context_frames,
+                })
+            (source / "manifest.json").write_text(json.dumps({
+                "schema": 9,
+                "status": "complete",
+                "fps": 24,
+                "latent_format": "minimax_h3_av",
+                "width": 32,
+                "height": 32,
+                "length": 80,
+                "segments": entries,
+            }), encoding="utf-8")
+            model_path = root / "upscaler.safetensors"
+            model_path.write_bytes(b"model")
+
+            captured = []
+
+            def fake_master(path, checkpoints, planned, vae, audio_vae, width, height, crf):
+                captured.append((len(checkpoints), len(planned), width, height))
+                path.write_bytes(b"mp4")
+
+            patches = (
+                mock.patch.object(long_nodes.folder_paths, "get_output_directory", return_value=directory),
+                mock.patch.object(long_nodes, "_upscaler_model_path", return_value=model_path),
+                mock.patch.object(
+                    long_nodes, "_output_paths",
+                    return_value=(destination, destination / "master.mp4", "upscaled"),
+                ),
+                mock.patch.object(long_nodes, "_write_master", side_effect=fake_master),
+                mock.patch.dict(
+                    long_nodes.comfy_nodes.NODE_CLASS_MAPPINGS,
+                    {"H3LatentUpscalerNodeResolution": FakeUpscaler},
+                ),
+            )
+            for patch in patches:
+                patch.start()
+            try:
+                first = MiniMaxH3LongLatentUpscale.execute(
+                    VideoVAE(), AudioVAE(), str(source), "upscaler.safetensors",
+                    64, 64, 2, "cuda", "fp16", "upscaled", False, -1, 28)
+                self.assertEqual(first[3], 2)
+                self.assertEqual(FakeUpscaler.calls, 2)
+                self.assertEqual(captured[-1], (2, 2, 64, 64))
+                upscaled, _ = _load_segment(destination / "latents" / "segment_0000.safetensors")
+                video, audio = upscaled["samples"].unbind()
+                self.assertEqual(video.shape[-2:], (4, 4))
+                self.assertEqual(audio.shape[1:3], (32, 2))
+
+                second = MiniMaxH3LongLatentUpscale.execute(
+                    VideoVAE(), AudioVAE(), str(source), "upscaler.safetensors",
+                    64, 64, 2, "cuda", "fp16", "upscaled", True, -1, 28)
+                self.assertEqual(second[3], 2)
+                self.assertEqual(FakeUpscaler.calls, 2)
+                self.assertEqual(captured[-1], (2, 2, 64, 64))
+            finally:
+                for patch in reversed(patches):
+                    patch.stop()
+
     def test_execute_reuses_completed_segments(self):
         noise_seeds = []
 
@@ -228,6 +327,11 @@ class BackendTests(unittest.TestCase):
                 self.assertEqual(first[3], 2)
                 self.assertEqual(FakeSampler.calls, 2)
                 self.assertEqual(noise_seeds, [1, 1])
+                manifest = json.loads((project / "manifest.json").read_text(encoding="utf-8"))
+                self.assertEqual(manifest["fps"], 24)
+                self.assertEqual(manifest["latent_format"], "minimax_h3_av")
+                self.assertEqual(manifest["segments"][1]["output_start"], 345)
+                self.assertEqual(manifest["segments"][1]["output_frames"], 15)
 
                 second = long_nodes.MiniMaxH3LongReferenceSampler.execute(
                     None, None, VideoVAE(), AudioVAE(), "A continuous shot", 32, 32, 360,
