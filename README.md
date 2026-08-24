@@ -1,5 +1,7 @@
 # ComfyUI-MiniMax-H3-Long-Video
 
+[English](README.md) | [日本語](README_ja.md)
+
 Experimental long-form MiniMax H3 reference-video generation for current ComfyUI.
 
 ## Node
