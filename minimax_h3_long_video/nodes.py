@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Portions of the MiniMax H3 reference conditioning were adapted and modified
+# from ComfyUI's built-in MiniMax H3 implementation in 2026.
+
 import hashlib
 import json
 import math

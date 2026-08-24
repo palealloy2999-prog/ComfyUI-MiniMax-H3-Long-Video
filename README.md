@@ -63,3 +63,9 @@ output/h3_long_upscaled/
 - H.264/AAC MP4 output
 - `width` and `height` must match a connected `initial_latent`
 - Long latent upscaling requires the separately installed H3 latent upscaler custom node and model weights. **Experimental and untested.**
+
+## License
+
+[GNU General Public License v3.0](LICENSE)
+
+This project contains portions adapted and modified in 2026 from ComfyUI's built-in MiniMax H3 implementation, which is licensed under GPL-3.0.

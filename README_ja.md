@@ -82,3 +82,9 @@ output/h3_long_upscaled/
 - H.264/AACのMP4出力
 - `initial_latent` を接続する場合、`width` と `height` をそのLATENTの解像度に合わせる必要があります
 - 長尺LATENTアップスケールには、H3 latent upscalerカスタムノードとモデルウェイトの別途インストールが必要です。**※実験段階。未テストです。**
+
+## ライセンス
+
+[GNU General Public License v3.0](LICENSE)
+
+本プロジェクトには、GPL-3.0で提供されるComfyUI標準のMiniMax H3実装から、2026年に移植・変更した部分が含まれます。
