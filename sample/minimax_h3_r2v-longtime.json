@@ -1,0 +1,1769 @@
+{
+  "id": "423b0d3f-e696-448c-a3d4-3bb74d3b8c76",
+  "revision": 0,
+  "last_node_id": 466,
+  "last_link_id": 1002,
+  "nodes": [
+    {
+      "id": 411,
+      "type": "SolAttnPatch",
+      "pos": [
+        -90,
+        5980
+      ],
+      "size": [
+        270,
+        300
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 848
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            847
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SolAttnPatch"
+      },
+      "widgets_values": [
+        1.3,
+        0.2,
+        0.9,
+        4096,
+        true,
+        "exact_kv",
+        true,
+        "3d",
+        false,
+        false,
+        ""
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 416,
+      "type": "MiniMaxH3SigmaShift",
+      "pos": [
+        -390,
+        5980
+      ],
+      "size": [
+        270,
+        90
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 913
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            848
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SigmaShift"
+      },
+      "widgets_values": [
+        12,
+        3
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 430,
+      "type": "DiffusionModelLoaderKJ",
+      "pos": [
+        -950,
+        5980
+      ],
+      "size": [
+        530,
+        180
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "extra_state_dict",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            913
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DiffusionModelLoaderKJ"
+      },
+      "widgets_values": [
+        "minimax\\MiniMax-H3-Pruned-Ref-Delta-Fused-r1024-comfy-int8-convrot-fc2bf16.safetensors",
+        "default",
+        "default",
+        true,
+        "sageattn_qk_int8_pv_fp8_cuda++",
+        false
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 445,
+      "type": "KSamplerSelect",
+      "pos": [
+        650,
+        6260
+      ],
+      "size": [
+        230,
+        70
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            943
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "res_multistep"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 326,
+      "type": "LoadImage",
+      "pos": [
+        -630,
+        7270
+      ],
+      "size": [
+        320,
+        500
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            974
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "7426__00001_.png",
+        "image"
+      ]
+    },
+    {
+      "id": 465,
+      "type": "LoadImage",
+      "pos": [
+        -290,
+        7280
+      ],
+      "size": [
+        320,
+        500
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            975
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "7457__00001_.png",
+        "image"
+      ]
+    },
+    {
+      "id": 383,
+      "type": "BasicScheduler",
+      "pos": [
+        -950,
+        6710
+      ],
+      "size": [
+        380,
+        130
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 990
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            994
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        20,
+        1
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 413,
+      "type": "SpectrumApplyMiniMaxH3",
+      "pos": [
+        220,
+        5980
+      ],
+      "size": [
+        290,
+        420
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 847
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            990,
+            991,
+            995
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SpectrumApplyMiniMaxH3"
+      },
+      "widgets_values": [
+        true,
+        0.5,
+        4,
+        0.1,
+        2,
+        0.75,
+        5,
+        1,
+        8,
+        false,
+        "system_ram",
+        true,
+        false,
+        false,
+        true,
+        0
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 444,
+      "type": "Power Puter (rgthree)",
+      "pos": [
+        580,
+        5990
+      ],
+      "size": [
+        310,
+        220
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "a",
+          "type": "*",
+          "link": 998
+        },
+        {
+          "name": "b",
+          "type": "*",
+          "link": 997
+        },
+        {
+          "name": "c",
+          "type": "*",
+          "link": 996
+        },
+        {
+          "name": "d",
+          "type": "*",
+          "link": 994
+        },
+        {
+          "name": "e",
+          "type": "*",
+          "link": 995
+        },
+        {
+          "name": "f",
+          "type": "*",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "*",
+          "name": "*",
+          "shape": 3,
+          "type": "*",
+          "links": [
+            944
+          ]
+        },
+        {
+          "label": "*",
+          "name": "",
+          "type": "*",
+          "links": [
+            957
+          ]
+        }
+      ],
+      "properties": {},
+      "widgets_values": [
+        {
+          "outputs": [
+            "*",
+            "*"
+          ]
+        },
+        "if a:\n return (b,c)\nelse:\n return (d,e)"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 198,
+      "type": "PrimitiveBoolean",
+      "pos": [
+        -1270,
+        6120
+      ],
+      "size": [
+        260,
+        60
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "BOOLEAN",
+          "type": "BOOLEAN",
+          "links": [
+            998
+          ]
+        }
+      ],
+      "title": "Enable Turbo LoRA?",
+      "properties": {
+        "Node name for S&R": "PrimitiveBoolean"
+      },
+      "widgets_values": [
+        true
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 412,
+      "type": "CLIPLoader",
+      "pos": [
+        -950,
+        6220
+      ],
+      "size": [
+        530,
+        130
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            999
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "models": [
+          {
+            "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+            "directory": "text_encoders"
+          }
+        ]
+      },
+      "widgets_values": [
+        "minimax\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 399,
+      "type": "VAELoader",
+      "pos": [
+        -950,
+        6410
+      ],
+      "size": [
+        530,
+        70
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            1000
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "models": [
+          {
+            "name": "minimax_h3_video_vae_fp16.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors",
+            "directory": "vae"
+          }
+        ]
+      },
+      "widgets_values": [
+        "minimax\\minimax_h3_video_vae_fp16.safetensors"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 400,
+      "type": "VAELoader",
+      "pos": [
+        -950,
+        6540
+      ],
+      "size": [
+        530,
+        70
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            1001
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "models": [
+          {
+            "name": "minimax_h3_audio_vae_fp32.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+            "directory": "vae"
+          }
+        ]
+      },
+      "widgets_values": [
+        "minimax\\minimax_h3_audio_vae_fp32.safetensors"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 220,
+      "type": "PrimitiveFloat",
+      "pos": [
+        -1270,
+        6470
+      ],
+      "size": [
+        260,
+        70
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": [
+            986
+          ]
+        }
+      ],
+      "title": "Float (Duration)",
+      "properties": {
+        "Node name for S&R": "PrimitiveFloat"
+      },
+      "widgets_values": [
+        45
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 446,
+      "type": "ComfyMathExpression",
+      "pos": [
+        -1270,
+        6590
+      ],
+      "size": [
+        230,
+        130
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "a",
+          "name": "values.a",
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 986
+        },
+        {
+          "label": "b",
+          "name": "values.b",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            987
+          ]
+        },
+        {
+          "name": "BOOL",
+          "type": "BOOLEAN",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyMathExpression"
+      },
+      "widgets_values": [
+        "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 223,
+      "type": "PrimitiveFloat",
+      "pos": [
+        -1270,
+        6640
+      ],
+      "size": [
+        260,
+        70
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": []
+        }
+      ],
+      "title": "Float (UpScale)",
+      "properties": {
+        "Node name for S&R": "PrimitiveFloat"
+      },
+      "widgets_values": [
+        1.5
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 459,
+      "type": "ComfyMathExpression",
+      "pos": [
+        -1270,
+        6950
+      ],
+      "size": [
+        230,
+        130
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "a",
+          "name": "values.a",
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 965
+        },
+        {
+          "label": "b",
+          "name": "values.b",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            970
+          ]
+        },
+        {
+          "name": "BOOL",
+          "type": "BOOLEAN",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyMathExpression"
+      },
+      "widgets_values": [
+        "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 464,
+      "type": "Note",
+      "pos": [
+        -1270,
+        6990
+      ],
+      "size": [
+        260,
+        160
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "動画を指定秒数に分割して生成します\n最大15\n60秒の動画を生成する際に15であれば4分割\n10であれば6分割して生成します"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 460,
+      "type": "PrimitiveInt",
+      "pos": [
+        -1270,
+        6810
+      ],
+      "size": [
+        260,
+        90
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            965
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveInt"
+      },
+      "widgets_values": [
+        15,
+        "fixed"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 291,
+      "type": "MiniMaxH3PreviewOverride",
+      "pos": [
+        950,
+        5950
+      ],
+      "size": [
+        500,
+        750
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 957
+        },
+        {
+          "label": "Tiny VAE",
+          "name": "tiny_vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            958
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreviewOverride"
+      },
+      "widgets_values": [
+        1016,
+        80,
+        true,
+        16,
+        3,
+        "taeh3_decoder.safetensors",
+        ""
+      ]
+    },
+    {
+      "id": 199,
+      "type": "CustomResolutionSelector",
+      "pos": [
+        -1270,
+        6230
+      ],
+      "size": [
+        260,
+        180
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            988
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            989
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CustomResolutionSelector"
+      },
+      "widgets_values": [
+        "16:9 landscape",
+        "0.2",
+        32,
+        ""
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 429,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        -950,
+        6960
+      ],
+      "size": [
+        380,
+        180
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 991
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            849,
+            996
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderModelOnly"
+      },
+      "widgets_values": [
+        "miniMaxH3\\minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors",
+        0.8
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 431,
+      "type": "BasicScheduler",
+      "pos": [
+        -530,
+        6960
+      ],
+      "size": [
+        370,
+        130
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 849
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            997
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        6,
+        1
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 117,
+      "type": "MarkdownNote",
+      "pos": [
+        -1790,
+        5930
+      ],
+      "size": [
+        440,
+        740
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note: Model Links",
+      "properties": {},
+      "widgets_values": [
+        "## Model Links\n[🤗 Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)\n\n**vae**\n\n- [minimax_h3_video_vae_fp16.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors)\n- [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n\n**diffusion_models**\n\n- [minimax_h3_ref2va_pruned_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors)\n\n**text_encoders**\n\n- [qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors)\n\n\n## Model Storage Location\n\n```\n📂 ComfyUI/\n├── 📂 models/\n│   ├── 📂 vae/\n│   │   ├── minimax_h3_video_vae_fp16.safetensors\n│   │   └── minimax_h3_audio_vae_fp32.safetensors\n│   ├── 📂 diffusion_models/\n│   │   └── minimax_h3_ref2va_pruned_int8_convrot.safetensors\n│   └── 📂 text_encoders/\n│       └── qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\n```\n\n## Report Issue\n\nNote: Please update ComfyUI first ([guide](https://docs.comfy.org/installation/update_comfyui)) and prepare required models. Desktop/Cloud updates follow stable releases, so some nightly-supported models may not be available yet.\n\n- Cannot run / runtime errors: [ComfyUI/issues](https://github.com/comfyanonymous/ComfyUI/issues)\n- UI / frontend issues: [ComfyUI_frontend/issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues)\n- Workflow issues: [workflow_templates/issues](https://github.com/Comfy-Org/workflow_templates/issues)\n"
+      ],
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 137,
+      "type": "LoadImage",
+      "pos": [
+        -1270,
+        7270
+      ],
+      "size": [
+        290,
+        510
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            972
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "pasted/image (510).png",
+        "image"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 139,
+      "type": "LoadImage",
+      "pos": [
+        -950,
+        7270
+      ],
+      "size": [
+        290,
+        510
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            973
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "pasted/image (511).png",
+        "image"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 466,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        90,
+        6840
+      ],
+      "size": [
+        1330,
+        950
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            1002
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": [
+        "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: A 45-second anime-style music video featuring a cute girl simply walking through a stylized city in a charming, playful, slightly silly way. Use <Picture 1> as the sole authoritative reference for the girl’s identity, face, hairstyle, outfit, silhouette, proportions, and overall visual style. Use <Picture 2> as the authoritative reference for the city background style, side-view street composition, simplified building shapes, signs, roads, sidewalks, traffic lights, trees, and clean graphic urban layout.\n\nPreserve the exact girl from <Picture 1> throughout the entire video. Do not redesign her outfit, face, hairstyle, body proportions, or age impression. Preserve the same anime-style rendering and the same visual charm. Preserve the general graphic city design language of <Picture 2> throughout the video.\n\nThe core visual concept is extremely simple and rhythmic: the girl remains near the center of the frame in side view, continuously walking toward the right side of the screen, while the city background scrolls horizontally behind her. The city background is stylized and graphic rather than realistic. The overall feeling is cute, light, catchy, and slightly silly.\n\nThe lyrics are intentionally simple, cheerful, and a little foolish in a lovable way, about ordinary things such as tasty food, the blue sky, soft wind, and small everyday happiness. The song should feel catchy and memorable even though the words are trivial.\n\nThe visual structure should remain clean and readable. The character stays central. The background scrolls. The color palette of the background changes in sync with the lyrics and music. Occasionally the video cuts in to close-ups of the girl’s face before returning to the side-view walking composition.\n\nUse rhythmic lyric-motion typography. Important words and short phrases from the lyrics appear on screen as animated graphic text integrated into the music video. The text should feel stylish, playful, and synchronized with the beat, rather than functioning like ordinary subtitles.\n\n[Shot 1] The video opens with the girl from <Picture 1> already walking in side view toward the right. She remains near the center of the frame. The camera is a clean side-view medium full-body shot. The city background from <Picture 2> scrolls smoothly from right to left behind her, creating the feeling that she is steadily walking through town.\n\nHer walking motion is soft, natural, and rhythmic: gentle arm swing, small up-and-down body motion, subtle hair bounce, and slight movement in the hem of her skirt. Her expression is calm, cute, and slightly absent-minded, as if she is happily singing nonsense thoughts to herself.\n\nThe initial background palette is bright and clean, based on soft blue-gray, white, and muted urban tones. The first lyric phrase begins immediately:\n<d>[Japanese]\nごはんがおいしい\nきょうもおいしい\n</d>\n\nOn-screen lyric keywords appear in large playful text:\n“ごはん”\n“おいしい”\n\nThe word “ごはん” pops in with a soft bounce near the upper area of the frame. “おいしい” appears larger and warmer in color, timed to the beat.\n\n[Shot 2] Continue the side-view walking composition. Keep the girl centered while the stylized city scrolls behind her. The background color shifts gently toward warmer cream, light orange, and soft pink accents, matching the happy food-related lyrics.\n\nShe keeps walking with a tiny smile, looking forward. Occasionally her eyes drift slightly upward or ahead, but she remains relaxed and steady.\n\nThe next lyric lines begin:\n<d>[Japanese]\nパンもふわふわ\nおにぎり まるい\n</d>\n\nAnimated lyric text appears in short motion-graphic bursts:\n“ふわふわ” stretches softly and floats.\n“まるい” appears as rounded chunky typography and lightly bounces.\n\n[Shot 3] Brief face cut-in. The camera cuts to a chest-up or close-up shot of the girl’s face from <Picture 1>, still matching the same identity exactly. She continues singing with a gentle, cute expression. Her hair moves slightly as if touched by a soft breeze. Her eyes are lively and expressive. Include natural irregular blinking and subtle gaze changes.\n\nThe background becomes simpler and more graphic during this cut-in, with only abstract color fields or simplified city shapes so the face remains the focus.\n\nThe lyric continues:\n<d>[Japanese]\nなんかいいかも\nしらんけど\n</d>\n\nThe phrase “なんかいいかも” slides in smoothly.\n“しらんけど” appears with a playful sideways wobble, slightly smaller and humorous.\n\n[Shot 4] Cut back to the side-view walking shot. The girl remains centered and continues walking toward the right. The city background resumes its horizontal scroll. The palette changes toward clear sky blue and white.\n\nThe next lyric lines begin:\n<d>[Japanese]\n空が青い\nびっくり青い\n雲がのんびり\nのびている\n</d>\n\nOn-screen lyric keywords:\n“青い” appears large in vivid blue.\n“のんびり” drifts slowly across the frame.\n“のびている” extends horizontally with the background motion.\n\nThe background itself should subtly react to the lyric theme: sky-related lyrics bring brighter blue tones and more airy visual space.\n\n[Shot 5] Continue the side-view walking composition, but briefly add a slightly closer crop on the girl from knees-up, still side view and still centered. Her walking remains the main action. She looks cute and unhurried. The background scroll speed remains consistent and smooth.\n\nThe next lyric lines:\n<d>[Japanese]\n風がやさしい\nたぶんやさしい\n前髪ふわっと\nなった気がする\n</d>\n\nLyric keywords:\n“やさしい” appears in soft rounded text with a gentle fade.\n“ふわっと” arrives with a small upward float and soft easing motion.\n\nThe color palette shifts toward pale mint, light aqua, and white.\n\n[Shot 6] Face cut-in again. Use a close-up of the girl’s face, matching <Picture 1> precisely. She sings directly with a mild, thoughtful, slightly silly sincerity. Include subtle mouth movement matching the lyrics. Her expression should feel innocent and charming.\n\nThe lyric continues:\n<d>[Japanese]\n右へ歩けば\nだいたい進む\n左に行くと\nちょっとちがう\n</d>\n\nThe word “右” appears bold and clean, sliding toward the right.\n“左” appears briefly from the opposite side.\nThe overall lyric typography should feel like playful visual jokes built from simple observations.\n\n[Shot 7] Return to the main side-view full-body walking shot. The city scroll continues. The palette now becomes brighter and poppier: lemon yellow, pale coral, and sky blue accents layered over the simple city design from <Picture 2>.\n\nThe girl keeps walking in the same direction. Keep the animation simple and loop-like but lively enough to feel musical and intentional. Her feet, arms, hair, and skirt should all move in a pleasing rhythmic cycle.\n\nThe next lyric lines:\n<d>[Japanese]\n信号ぴかぴか\nまちはすごい\nおみせがいっぱい\nたぶんたのしい\n</d>\n\nLyric keywords:\n“ぴかぴか” flickers in time with the beat.\n“すごい” appears oversized for comedic emphasis.\n“いっぱい” duplicates into several smaller copies across the frame.\n\n[Shot 8] Add a more graphic interlude while keeping the girl central and walking. The background simplifies further into flatter color blocks and strong shapes based on the city motif. The lyric typography becomes more prominent and energetic.\n\nThe lyric lines:\n<d>[Japanese]\nジュースはつめたい\nごくごくうまい\nアイスもいいよね\nわかる それな\n</d>\n\nKeywords:\n“つめたい” drops in with a cool-color effect.\n“ごくごく” pulses twice with the rhythm.\n“それな” appears in a playful stamped style.\n\nThe background color shifts toward cool cyan, pale blue, and light white.\n\n[Shot 9] Face cut-in. The girl glances slightly toward the viewer while continuing to sing. Her expression becomes a little brighter, with a soft smile. Keep the same face and proportions as <Picture 1>. Include subtle natural blinking.\n\nThe lyric continues:\n<d>[Japanese]\n夕方まだかな\nまだでもいいや\nなんでもないけど\nなんかたのしい\n</d>\n\nThe phrase “なんでもない” appears smaller and understated.\n“なんかたのしい” expands warmly in a friendly rounded font.\n\n[Shot 10] Return to the walking wide side-view. This is the visual climax of the cute walking concept. The city scrolls smoothly, the color palette changes more frequently in sync with the music, and multiple lyric keywords appear rhythmically but remain readable.\n\nThe girl continues her steady rightward walk. Her motion remains relaxed and charming rather than dramatic.\n\nFinal lyric block:\n<d>[Japanese]\nごはんがおいしい\n空が青い\nそれだけなのに\n今日はうれしい\n</d>\n\nKeywords:\n“ごはん”\n“青い”\n“うれしい”\n\nThe final line “今日はうれしい” should feel like the emotional conclusion, even though the song remains delightfully simple and silly.\n\n[Shot 11] In the final few seconds, keep the side-view walking shot but gradually simplify the background and text animation. The city colors become harmonized into a clean, bright final palette. The last keyword “うれしい” lingers briefly in a large elegant rounded font.\n\nThe girl keeps walking without stopping. Do not end with a dance pose. Let the concept remain simple until the end: she is still walking, still centered, still moving rightward through the cheerful city.\n\nAt the end, the music resolves cleanly while the scrolling background continues for a moment, then the image fades out.\n\nVisual-style requirement: Maintain the anime-style visual identity of <Picture 1> for the girl and the graphic city design language of <Picture 2> for the environment. Do not shift into photorealism, live-action, or generic 3D CGI. Keep the look clean, readable, and music-video friendly.\n\nCharacter-consistency requirement: Preserve the exact same girl from <Picture 1> throughout the whole video. No outfit changes, no hairstyle changes, no age shift, no redesign.\n\nBackground requirement: The city should remain visually based on <Picture 2>, with simplified side-view urban forms, roads, sidewalks, traffic lights, trees, buildings, and signs. The background scrolls horizontally throughout the video. Use palette changes to create variety while preserving the same overall background design language.\n\nMotion requirement: The girl should keep walking toward the right throughout almost the entire video. She remains visually central. The background moves behind her. Use only occasional close-up cut-ins for variety.\n\nLyric-motion requirement: Important lyric words and short phrases should appear as animated motion graphics integrated into the composition. Do not present them only as plain bottom subtitles. Keep them cute, readable, stylish, and synchronized to the music.\n\nFacial-animation requirement: During face cut-ins, use natural blinking, subtle gaze shifts, and gentle expression changes. The close-ups should feel lively and charming.\n\noverall_soundscape: Clean vocal-forward music video sound. Only minimal environmental presence is needed: a light suggestion of city ambience and soft footstep rhythm beneath the song. The emphasis should remain on the song and lyric timing.\n\nnon_diegetic_music: A cute, upbeat, catchy pop song with a light and cheerful arrangement. Use bright drums, bouncy bass, playful synths, and a sweet female vocal delivery. The melody should be simple and memorable. The tone should be charming, slightly silly, and emotionally light. It should feel like a fun anime music video song built around trivial but lovable observations about everyday life."
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 451,
+      "type": "MiniMaxH3LongReferenceSampler",
+      "pos": [
+        1490,
+        5950
+      ],
+      "size": [
+        1150,
+        1300
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 958
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 999
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 1000
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 1001
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 943
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 944
+        },
+        {
+          "name": "initial_latent",
+          "shape": 7,
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "label": "ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 972
+        },
+        {
+          "label": "ref_image_1",
+          "name": "ref_images.ref_image_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 973
+        },
+        {
+          "label": "ref_image_2",
+          "name": "ref_images.ref_image_2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 974
+        },
+        {
+          "label": "ref_image_3",
+          "name": "ref_images.ref_image_3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 975
+        },
+        {
+          "label": "ref_image_4",
+          "name": "ref_images.ref_image_4",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_0",
+          "name": "ref_videos.ref_video_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_audio_0",
+          "name": "ref_video_audios.ref_video_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "label": "ref_audio_0",
+          "name": "ref_audios.ref_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 1002
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 988
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 989
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": 987
+        },
+        {
+          "name": "max_raw_frames",
+          "type": "INT",
+          "widget": {
+            "name": "max_raw_frames"
+          },
+          "link": 970
+        },
+        {
+          "name": "noise_seed",
+          "type": "INT",
+          "widget": {
+            "name": "noise_seed"
+          },
+          "link": 962
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": [
+            946
+          ]
+        },
+        {
+          "name": "last_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "master_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "segment_count",
+          "type": "INT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LongReferenceSampler"
+      },
+      "widgets_values": [
+        "",
+        1344,
+        768,
+        720,
+        73,
+        "22",
+        20,
+        "h3_long_video/%noise_seed.value%/",
+        "h3_long_video/%noise_seed.value%/video_",
+        false,
+        -1,
+        18,
+        "match"
+      ]
+    },
+    {
+      "id": 455,
+      "type": "PrimitiveNode",
+      "pos": [
+        -1270,
+        5980
+      ],
+      "size": [
+        250,
+        90
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "widget": {
+            "name": "noise_seed"
+          },
+          "links": [
+            962
+          ]
+        }
+      ],
+      "title": "noise_seed",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        20,
+        "increment"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 450,
+      "type": "SaveVideo",
+      "pos": [
+        2670,
+        5950
+      ],
+      "size": [
+        890,
+        649.0434782608695
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 946
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "%date:yyyy%/video/%date:MMdd%/%noise_seed.value%_",
+        "mp4",
+        "h264",
+        "auto",
+        "auto"
+      ]
+    }
+  ],
+  "links": [
+    [
+      847,
+      411,
+      0,
+      413,
+      0,
+      "MODEL"
+    ],
+    [
+      848,
+      416,
+      0,
+      411,
+      0,
+      "MODEL"
+    ],
+    [
+      849,
+      429,
+      0,
+      431,
+      0,
+      "MODEL"
+    ],
+    [
+      913,
+      430,
+      0,
+      416,
+      0,
+      "MODEL"
+    ],
+    [
+      943,
+      445,
+      0,
+      451,
+      4,
+      "SAMPLER"
+    ],
+    [
+      944,
+      444,
+      0,
+      451,
+      5,
+      "SIGMAS"
+    ],
+    [
+      946,
+      451,
+      0,
+      450,
+      0,
+      "VIDEO"
+    ],
+    [
+      957,
+      444,
+      1,
+      291,
+      0,
+      "MODEL"
+    ],
+    [
+      958,
+      291,
+      0,
+      451,
+      0,
+      "MODEL"
+    ],
+    [
+      962,
+      455,
+      0,
+      451,
+      20,
+      "INT"
+    ],
+    [
+      965,
+      460,
+      0,
+      459,
+      0,
+      "INT"
+    ],
+    [
+      970,
+      459,
+      1,
+      451,
+      19,
+      "INT"
+    ],
+    [
+      972,
+      137,
+      0,
+      451,
+      7,
+      "IMAGE"
+    ],
+    [
+      973,
+      139,
+      0,
+      451,
+      8,
+      "IMAGE"
+    ],
+    [
+      974,
+      326,
+      0,
+      451,
+      9,
+      "IMAGE"
+    ],
+    [
+      975,
+      465,
+      0,
+      451,
+      10,
+      "IMAGE"
+    ],
+    [
+      986,
+      220,
+      0,
+      446,
+      0,
+      "FLOAT"
+    ],
+    [
+      987,
+      446,
+      1,
+      451,
+      18,
+      "INT"
+    ],
+    [
+      988,
+      199,
+      0,
+      451,
+      16,
+      "INT"
+    ],
+    [
+      989,
+      199,
+      1,
+      451,
+      17,
+      "INT"
+    ],
+    [
+      990,
+      413,
+      0,
+      383,
+      0,
+      "MODEL"
+    ],
+    [
+      991,
+      413,
+      0,
+      429,
+      0,
+      "MODEL"
+    ],
+    [
+      994,
+      383,
+      0,
+      444,
+      3,
+      "SIGMAS"
+    ],
+    [
+      995,
+      413,
+      0,
+      444,
+      4,
+      "MODEL"
+    ],
+    [
+      996,
+      429,
+      0,
+      444,
+      2,
+      "MODEL"
+    ],
+    [
+      997,
+      431,
+      0,
+      444,
+      1,
+      "SIGMAS"
+    ],
+    [
+      998,
+      198,
+      0,
+      444,
+      0,
+      "BOOLEAN"
+    ],
+    [
+      999,
+      412,
+      0,
+      451,
+      1,
+      "CLIP"
+    ],
+    [
+      1000,
+      399,
+      0,
+      451,
+      2,
+      "VAE"
+    ],
+    [
+      1001,
+      400,
+      0,
+      451,
+      3,
+      "VAE"
+    ],
+    [
+      1002,
+      466,
+      0,
+      451,
+      15,
+      "STRING"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 5,
+      "title": "Setting",
+      "bounding": [
+        -1280,
+        5910,
+        280,
+        810
+      ],
+      "color": "#8A8",
+      "flags": {}
+    },
+    {
+      "id": 1,
+      "title": "Models",
+      "bounding": [
+        -960,
+        5910,
+        1480,
+        710
+      ],
+      "color": "#8AA",
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "Sampling",
+      "bounding": [
+        570,
+        5920,
+        330,
+        420
+      ],
+      "color": "#8AA",
+      "flags": {}
+    },
+    {
+      "id": 6,
+      "title": "Turbo",
+      "bounding": [
+        -960,
+        6890,
+        810,
+        260
+      ],
+      "color": "#88A",
+      "flags": {}
+    },
+    {
+      "id": 7,
+      "title": "Normal",
+      "bounding": [
+        -960,
+        6640,
+        400,
+        210
+      ],
+      "color": "#88A",
+      "flags": {}
+    },
+    {
+      "id": 9,
+      "title": "Segment time",
+      "bounding": [
+        -1280,
+        6740,
+        280,
+        420
+      ],
+      "color": "#8A8",
+      "flags": {}
+    },
+    {
+      "id": 10,
+      "title": "Group",
+      "bounding": [
+        -1280,
+        7200,
+        1320,
+        590
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "frontendVersion": "1.45.21",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": false,
+    "VHS_KeepIntermediate": true,
+    "favoritedWidgets": {
+      "favorites": [
+        {
+          "nodeLocatorId": "2c327c39-9fdb-488b-b28e-31fb698bc7d8:217",
+          "widgetName": "steps"
+        }
+      ]
+    },
+    "ds": {
+      "scale": 0.3450988345101691,
+      "offset": [
+        2090.13638891553,
+        -5465.28743417836
+      ]
+    }
+  },
+  "version": 0.4
+}

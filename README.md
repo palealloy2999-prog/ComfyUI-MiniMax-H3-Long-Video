@@ -10,6 +10,8 @@ Experimental long-form MiniMax H3 reference-video generation for current ComfyUI
 
 Prompts may use either an `integrated_multimodal_description:` block or a plain `[Shot 1] ... [Shot N] At MM:SS.mmm, ...` timeline. Each shot is assigned once, to the segment containing its global start timestamp; a shot already started in the previous segment is not copied into the next one. Timestamps are rebased to the segment-local timeline while text before the first shot and recognized camera-editing requirements after the final shot remain global instructions. A segment with no new shot receives only a neutral instruction to continue from its preceding AV context without replaying earlier action.
 
+> **Shot markers are required for intentional long-form progression.** A fully timestamped Shot timeline gives the most precise control. If every Shot omits its timestamp, the node distributes the Shots evenly across the segment count calculated from `length` and `max_raw_frames`, then assigns local timestamps automatically. Timestamped and untimed Shots may be mixed: explicit timestamps remain fixed, while untimed Shots are spaced evenly between the surrounding timestamped Shots or between the final timestamp and the end of the video. Without Shot markers, the node cannot divide actions by meaning and repeats the full prompt for every segment. This can cause each segment to restart or repeat the same action.
+
 Every segment uses the same `noise_seed`. Its local timeline prompt and preceding AV latent context provide the changes between segments.
 
 `max_raw_frames` controls the VRAM-sensitive total generated length of each segment, including its removable guide, on MiniMax H3's `17k+5` frame grid. At 24 fps, useful values are 73 (~3.0 seconds), 90 (3.75 seconds), 107 (~4.5 seconds), and 124 (~5.2 seconds). The default is 124.
@@ -33,6 +35,27 @@ Enable `resume` to reuse compatible checkpoints. Keep `reroll_from_segment` at `
 
 Changing an earlier prompt window requires rerolling from that segment or earlier because every later segment inherits its predecessor's latent tail.
 
+## Upscaling a saved long video
+
+`MiniMax H3 Long Latent Upscale & Assemble` reads a completed Long H3 bundle and processes its checkpoints one at a time with [Comfyui_Minimax_h3_latent_Upscaler](https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler). Install that custom node and place a compatible model under `ComfyUI/models/latent_upscale_models/` before using this node.
+
+`source_path` accepts an output-relative bundle folder, its `manifest.json`, or its `master.mp4`. An absolute path is also accepted when it stays inside ComfyUI's output folder. The node loads one source checkpoint from SSD, upscales only its 24-channel video stream, preserves its audio stream, and saves the result to a separate output bundle before loading the next segment.
+
+The complete raw segment, including its continuation guide, is upscaled before any frames are removed. During MP4 assembly the same `context_frames` and final padding rules recorded in the source manifest are applied, so the upscaled master has the same delivered timeline as the source master. Upscaled segment checkpoints can be reused with `resume`, or regenerated from `reroll_from_segment` onward.
+
+Use `target_width` and `target_height` for the requested pixel size. The default latent-grid `align` of 2 preserves dimensions that are multiples of 32 pixels; a larger alignment may round the actual output resolution upward. `last_latent` is the final upscaled raw AV segment, while `video` and `master_path` refer to the assembled result.
+
+Example output:
+
+```text
+output/h3_long_upscaled/
+├── master.mp4
+├── manifest.json
+└── latents/
+    ├── segment_0000.safetensors
+    └── segment_0001.safetensors
+```
+
 ## Current limits
 
 - MiniMax H3 AV latents only, batch size 1
@@ -40,3 +63,4 @@ Changing an earlier prompt window requires rerolling from that segment or earlie
 - H.264/AAC MP4 output
 - BasicGuider sampling, matching the existing H3 multishot path
 - `width` and `height` must match a connected `initial_latent`
+- Long latent upscaling requires the separately installed H3 latent upscaler custom node and model weights

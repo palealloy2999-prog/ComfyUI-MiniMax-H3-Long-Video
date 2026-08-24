@@ -112,7 +112,9 @@ def _fallback_prompt(prompt, start_seconds, context_seconds):
     return rebased
 
 
-def slice_prompt(prompt, start_seconds, end_seconds, context_seconds=0.0):
+def slice_prompt(prompt, start_seconds, end_seconds, context_seconds=0.0,
+                 segment_index=None, segment_count=None,
+                 timeline_duration_seconds=None):
     integrated = _INTEGRATED.search(prompt)
     global_tail = ""
     if integrated is not None:
@@ -134,19 +136,60 @@ def slice_prompt(prompt, start_seconds, end_seconds, context_seconds=0.0):
     if not matches:
         return _fallback_prompt(prompt, start_seconds, context_seconds)
 
-    shots = []
+    parsed = []
     for index, match in enumerate(matches):
         timestamp = match.group(2)
-        if timestamp is None:
-            if shots:
-                raise ValueError("every H3 shot after Shot 1 needs an At MM:SS.mmm timestamp")
-            start = 0.0
-        else:
-            start = parse_timestamp(timestamp)
-        if shots and start <= shots[-1][0]:
-            raise ValueError("H3 shot timestamps must be strictly increasing")
+        start = parse_timestamp(timestamp) if timestamp is not None else None
         text_end = matches[index + 1].start() if index + 1 < len(matches) else len(body)
-        shots.append((start, body[match.end():text_end].strip()))
+        parsed.append((start, body[match.end():text_end].strip()))
+
+    explicit = [(index, start) for index, (start, _) in enumerate(parsed) if start is not None]
+    if any(current[1] <= previous[1] for previous, current in zip(explicit, explicit[1:])):
+        raise ValueError("H3 shot timestamps must be strictly increasing")
+
+    if not explicit:
+        if segment_index is None or segment_count is None:
+            return _fallback_prompt(prompt, start_seconds, context_seconds)
+        if len(parsed) >= segment_count:
+            per_segment, extra = divmod(len(parsed), segment_count)
+            first = segment_index * per_segment + min(segment_index, extra)
+            count = per_segment + (segment_index < extra)
+            assigned = parsed[first:first + count]
+        elif len(parsed) == 1:
+            assigned = parsed if segment_index == 0 else []
+        else:
+            assigned = [
+                shot for index, shot in enumerate(parsed)
+                if round(index * (segment_count - 1) / (len(parsed) - 1)) == segment_index
+            ]
+        duration = end_seconds - start_seconds
+        shots = [
+            (start_seconds + offset * duration / len(assigned), text)
+            for offset, (_, text) in enumerate(assigned)
+        ] if assigned else []
+    else:
+        starts = [start for start, _ in parsed]
+        if starts[0] is None:
+            starts[0] = 0.0
+        anchors = [index for index, start in enumerate(starts) if start is not None]
+        for left, right in zip(anchors, anchors[1:]):
+            gap = right - left - 1
+            if gap:
+                step = (starts[right] - starts[left]) / (gap + 1)
+                for offset in range(1, gap + 1):
+                    starts[left + offset] = starts[left] + step * offset
+        last = anchors[-1]
+        if last < len(starts) - 1:
+            timeline_end = timeline_duration_seconds
+            if timeline_end is None:
+                timeline_end = end_seconds
+            if timeline_end <= starts[last]:
+                raise ValueError("H3 timeline must end after its final timestamped Shot")
+            gap = len(starts) - last - 1
+            step = (timeline_end - starts[last]) / (gap + 1)
+            for offset in range(1, gap + 1):
+                starts[last + offset] = starts[last] + step * offset
+        shots = [(start, text) for start, (_, text) in zip(starts, parsed)]
 
     selected = [
         (shot_start, text)
