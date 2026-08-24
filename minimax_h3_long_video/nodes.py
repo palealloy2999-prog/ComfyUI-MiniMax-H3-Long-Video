@@ -2,6 +2,8 @@ import hashlib
 import json
 import math
 import os
+import re
+import time
 from fractions import Fraction
 from pathlib import Path
 
@@ -21,8 +23,98 @@ from typing_extensions import override
 from .timeline import FPS, plan_segments, slice_prompt
 
 
-SCHEMA_VERSION = 2
-CROSSFADE_FRAMES = 8
+SCHEMA_VERSION = 8
+
+
+_PATTERN = re.compile(r"%([^%]+)%")
+_DATE_FIELD = re.compile(r"dd?|MM?|hh?|HH?|mm?|ss?|yyy?y?")
+
+
+def _expand_date_pattern(value):
+    now = time.localtime()
+    fields = {
+        "d": now.tm_mday,
+        "M": now.tm_mon,
+        "h": now.tm_hour,
+        "H": now.tm_hour,
+        "m": now.tm_min,
+        "s": now.tm_sec,
+    }
+
+    def replace_field(match):
+        token = match.group(0)
+        if token == "yy":
+            return str(now.tm_year)[-2:]
+        if token == "yyyy":
+            return str(now.tm_year).zfill(4)
+        if token[0] in fields:
+            return str(fields[token[0]]).zfill(len(token))
+        return token
+
+    return _DATE_FIELD.sub(replace_field, value)
+
+
+def _workflow_nodes(extra_pnginfo):
+    if not isinstance(extra_pnginfo, dict):
+        return []
+    workflow = extra_pnginfo.get("workflow")
+    if not isinstance(workflow, dict):
+        return []
+    nodes = workflow.get("nodes")
+    return nodes if isinstance(nodes, list) else []
+
+
+def _node_names(node):
+    names = [str(node.get("id", "")), node.get("title"), node.get("type")]
+    properties = node.get("properties")
+    if isinstance(properties, dict):
+        names.append(properties.get("Node name for S&R"))
+    return [name for name in names if isinstance(name, str) and name]
+
+
+def _node_input_value(node_name, input_name, prompt, extra_pnginfo):
+    nodes = _workflow_nodes(extra_pnginfo)
+    matches = [node for node in nodes if node_name in _node_names(node)]
+    if not matches:
+        lowered = node_name.casefold()
+        matches = [node for node in nodes if lowered in [name.casefold() for name in _node_names(node)]]
+    if not matches:
+        raise ValueError("cache_name pattern refers to unknown node {!r}".format(node_name))
+    if len(matches) > 1:
+        raise ValueError("cache_name pattern node {!r} is ambiguous; give the node a unique title".format(node_name))
+
+    node_id = str(matches[0].get("id"))
+    prompt_node = prompt.get(node_id) if isinstance(prompt, dict) else None
+    inputs = prompt_node.get("inputs") if isinstance(prompt_node, dict) else None
+    if isinstance(inputs, dict) and input_name in inputs:
+        value = inputs[input_name]
+    elif input_name == "value":
+        widget_values = matches[0].get("widgets_values")
+        value = widget_values[0] if isinstance(widget_values, list) and widget_values else None
+    else:
+        value = None
+    if value is None:
+        raise ValueError(
+            "cache_name pattern %{0}.{1}% could not read that node input".format(
+                node_name, input_name))
+    if not isinstance(value, (str, int, float, bool)):
+        raise ValueError(
+            "cache_name pattern %{0}.{1}% does not resolve to a text or number value".format(
+                node_name, input_name))
+    return str(value).lower() if isinstance(value, bool) else str(value)
+
+
+def _expand_cache_name(cache_name, prompt, extra_pnginfo):
+    def replace(match):
+        pattern = match.group(1)
+        if pattern.startswith("date:"):
+            return _expand_date_pattern(pattern[5:])
+        if "." in pattern:
+            node_name, input_name = pattern.rsplit(".", 1)
+            return _node_input_value(node_name, input_name, prompt, extra_pnginfo)
+        return match.group(0)
+
+    return _PATTERN.sub(replace, cache_name)
 
 
 def _streams(latent):
@@ -42,18 +134,42 @@ def _streams(latent):
     return video, audio
 
 
-def _project_directory(cache_name):
-    if not cache_name or cache_name in (".", ".."):
-        raise ValueError("cache_name must not be empty")
-    if any(ord(char) < 32 or char in '<>:"/\\|?*' for char in cache_name):
-        raise ValueError("cache_name contains characters that are not valid in a folder name")
+def _output_paths(cache_name, resume, width, height):
     output_root = Path(folder_paths.get_output_directory()).resolve()
-    project = (output_root / "h3_long" / cache_name).resolve()
+    resolved_name = cache_name.rstrip("/\\")
+    if not resolved_name or resolved_name in (".", ".."):
+        raise ValueError("cache_name must be an output-relative folder")
+    unresolved_project = (output_root / resolved_name).resolve()
+    unresolved_inside_output = os.path.commonpath(
+        (str(output_root), str(unresolved_project))) == str(output_root)
+    existed_before_resolution = (
+        "%" not in resolved_name and unresolved_inside_output and unresolved_project.exists())
+    full_output_folder, filename, _, subfolder, _ = folder_paths.get_save_image_path(
+        resolved_name + "/master", str(output_root), width, height)
+    if filename != "master":
+        raise ValueError("cache_name must resolve to an output-relative folder")
+
+    project = Path(full_output_folder).resolve()
+    if "%" in os.path.relpath(project, output_root):
+        raise ValueError("cache_name contains an unexpanded %...% pattern")
+    existed = existed_before_resolution if project == unresolved_project else any(project.iterdir())
+    if not resume and existed:
+        base = project
+        suffix = 2
+        while project.exists():
+            project = base.with_name("{}_{}".format(base.name, suffix))
+            suffix += 1
+
+    master_path = project / "master.mp4"
+    relative_folder = os.path.relpath(project, output_root)
+
     if os.path.commonpath((str(output_root), str(project))) != str(output_root):
-        raise ValueError("cache_name must stay inside the ComfyUI output folder")
+        raise ValueError("output path must stay inside the ComfyUI output folder")
+    if os.path.commonpath((str(output_root), str(master_path))) != str(output_root):
+        raise ValueError("output path must stay inside the ComfyUI output folder")
     project.mkdir(parents=True, exist_ok=True)
     (project / "latents").mkdir(exist_ok=True)
-    return project
+    return project, master_path, relative_folder
 
 
 def _atomic_json(path, data):
@@ -98,33 +214,6 @@ def _load_segment(path):
     latent = {"samples": comfy.nested_tensor.NestedTensor((state["video"], state["audio"]))}
     _streams(latent)
     return latent, metadata or {}
-
-
-def _add_context(latent, previous, context_frames):
-    target_video, target_audio = _streams(latent)
-    previous_video, previous_audio = _streams(previous)
-    if previous_video.shape[3:] != target_video.shape[3:]:
-        raise ValueError("initial_latent resolution does not match width and height")
-
-    video_steps = h3.video_latent_t(context_frames)
-    if previous_video.shape[2] < video_steps or target_video.shape[2] < video_steps:
-        raise ValueError("initial_latent is shorter than the selected context")
-    previous_start = previous_video.shape[2] - video_steps
-    if previous_start % 5:
-        raise ValueError("initial_latent does not end on an H3 temporal cycle boundary")
-
-    audio_steps = round(context_frames / FPS * h3.AUDIO_LATENT_FPS)
-    if previous_audio.shape[-1] < audio_steps or target_audio.shape[-1] < audio_steps:
-        raise ValueError("initial_latent audio is shorter than the selected context")
-
-    target_video[:, :, :video_steps].copy_(previous_video[:, :, -video_steps:].to(target_video))
-    target_audio[..., :audio_steps].copy_(previous_audio[..., -audio_steps:].to(target_audio))
-    video_mask = torch.ones_like(target_video)
-    audio_mask = torch.ones_like(target_audio)
-    video_mask[:, :, :video_steps] = 0.0
-    audio_mask[..., :audio_steps] = 0.0
-    latent["noise_mask"] = comfy.nested_tensor.NestedTensor((video_mask, audio_mask))
-    return latent
 
 
 def _prepare_references(vae, audio_vae, width, height, frame_count, ref_image_size,
@@ -211,27 +300,32 @@ def _add_continuation_guide(conditioning, previous, context_frames):
     video, audio = _streams(previous)
     video_steps = h3.video_latent_t(context_frames)
     audio_steps = round(context_frames / FPS * h3.AUDIO_LATENT_FPS)
+    if video.shape[2] < video_steps or audio.shape[-1] < audio_steps:
+        raise ValueError(
+            "the previous H3 AV latent is shorter than context_frames")
     keyframes = list(conditioning[0][1].get("minimax_keyframes", []))
     keyframes.append({
         "resolved_frame_index": 0,
         "latent": video[:, :, -video_steps:].detach().clone(),
         "audio_latent": audio[..., -audio_steps:].detach().clone(),
     })
-    return node_helpers.conditioning_set_values(conditioning, {"minimax_keyframes": keyframes})
+    return node_helpers.conditioning_set_values(
+        conditioning, {"minimax_keyframes": keyframes})
 
 
 def _prompt_hash(prompt):
     return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
 
 
-def _metadata_matches(metadata, segment, prompt_hash, width, height):
+def _metadata_matches(metadata, segment, prompt_hash, width, height, noise_seed):
     expected = {
         "schema": str(SCHEMA_VERSION),
         "raw_frames": str(segment.raw_frames),
-        "head_frames": str(segment.head_frames),
+        "context_frames": str(segment.context_frames),
         "output_frames": str(segment.output_frames),
         "width": str(width),
         "height": str(height),
+        "seed": str(noise_seed),
         "prompt_sha256": prompt_hash,
     }
     return all(metadata.get(key) == value for key, value in expected.items())
@@ -248,7 +342,7 @@ def _manifest_segment(segment, status, checkpoint, prompt_hash):
         "prompt_window_end": segment.prompt_end_seconds,
         "prompt_file": "prompts/segment_{:04d}.txt".format(segment.index),
         "raw_frames": segment.raw_frames,
-        "head_frames": segment.head_frames,
+        "context_frames": segment.context_frames,
         "prompt_sha256": prompt_hash,
     }
 
@@ -277,8 +371,6 @@ def _write_master(path, segment_paths, segments, vae, audio_vae, width, height, 
             audio_stream = container.add_stream("aac", rate=sample_rate, layout="stereo")
             video_pts = 0
             audio_pts = 0
-            pending_images = None
-            pending_audio = None
 
             def write_images(images):
                 nonlocal video_pts
@@ -304,17 +396,18 @@ def _write_master(path, segment_paths, segments, vae, audio_vae, width, height, 
                 for packet in audio_stream.encode(frame):
                     container.mux(packet)
 
-            for segment_index, (checkpoint, segment) in enumerate(zip(segment_paths, segments)):
+            for checkpoint, segment in zip(segment_paths, segments):
                 latent, _ = _load_segment(checkpoint)
                 images, audio = _decode_segment(vae, audio_vae, latent, segment.raw_frames)
-                output_images = images[segment.head_frames:segment.head_frames + segment.output_frames]
+                output_images = images[
+                    segment.context_frames:segment.context_frames + segment.output_frames]
 
                 waveform = audio["waveform"]
                 source_rate = int(audio["sample_rate"])
                 if source_rate != sample_rate:
                     raise ValueError("audio VAE changed sample rate between H3 segments")
                 raw_samples = round(segment.raw_frames / FPS * sample_rate)
-                head_samples = round(segment.head_frames / FPS * sample_rate)
+                context_samples = round(segment.context_frames / FPS * sample_rate)
                 output_start = round(segment.output_start / FPS * sample_rate)
                 output_end = round((segment.output_start + segment.output_frames) / FPS * sample_rate)
                 output_samples = output_end - output_start
@@ -326,37 +419,12 @@ def _write_master(path, segment_paths, segments, vae, audio_vae, width, height, 
                 elif waveform.shape[0] > 2:
                     waveform = waveform[:2]
                 waveform = waveform.to(device="cpu")
-                output_audio = waveform[:, head_samples:head_samples + output_samples]
+                output_audio = waveform[:, context_samples:context_samples + output_samples]
                 if output_audio.shape[-1] < output_samples:
                     output_audio = torch.nn.functional.pad(output_audio, (0, output_samples - output_audio.shape[-1]))
 
-                if pending_images is not None:
-                    blend_frames = pending_images.shape[0]
-                    context_images = images[
-                        segment.head_frames - blend_frames:segment.head_frames
-                    ].to(device="cpu")
-                    weights = torch.linspace(0.0, 1.0, blend_frames, dtype=context_images.dtype).reshape(-1, 1, 1, 1)
-                    write_images(pending_images * (1.0 - weights) + context_images * weights)
-
-                    blend_samples = pending_audio.shape[-1]
-                    context_audio = waveform[:, head_samples - blend_samples:head_samples]
-                    audio_weights = torch.linspace(
-                        0.0, 1.0, blend_samples, dtype=context_audio.dtype).reshape(1, -1)
-                    write_audio(pending_audio * (1.0 - audio_weights) + context_audio * audio_weights)
-
-                if segment_index + 1 < len(segments):
-                    next_blend_frames = min(
-                        CROSSFADE_FRAMES, segments[segment_index + 1].head_frames,
-                        output_images.shape[0])
-                    next_blend_samples = min(
-                        round(next_blend_frames / FPS * sample_rate), output_audio.shape[-1])
-                    write_images(output_images[:-next_blend_frames])
-                    write_audio(output_audio[:, :-next_blend_samples])
-                    pending_images = output_images[-next_blend_frames:].detach().to(device="cpu", copy=True)
-                    pending_audio = output_audio[:, -next_blend_samples:].detach().clone()
-                else:
-                    write_images(output_images)
-                    write_audio(output_audio)
+                write_images(output_images)
+                write_audio(output_audio)
 
             for packet in video_stream.encode(None):
                 container.mux(packet)
@@ -387,13 +455,16 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
                 io.Int.Input("height", default=768, min=32, max=4096, step=32),
                 io.Int.Input("length", default=720, min=24, max=86400, step=1,
                              tooltip="Delivered frames at 24 fps. 720 frames = 30 seconds."),
+                io.Int.Input("max_raw_frames", default=124, min=73, max=362, step=17,
+                             tooltip="Maximum generated frames per segment on H3's 17k+5 grid. 73 is ~3.0s, 90 is 3.75s, 107 is ~4.5s, and 124 is ~5.2s at 24 fps."),
                 io.Combo.Input("context_frames", options=["22", "39"], default="22",
-                               tooltip="Previous sampled AV latent carried into each new segment. The copied head is removed from the delivered video."),
-                io.Int.Input("noise_seed", default=0, min=0, max=0xffffffffffffffff, control_after_generate=True),
+                               tooltip="Previous sampled AV latent generated as a guide at the start of each continuation segment. Guided frames are removed from the delivered video."),
+                io.Int.Input("noise_seed", default=0, min=0, max=0xffffffffffffffff, control_after_generate=True,
+                             tooltip="Noise seed shared by every segment. Timeline prompts and continuation context change between segments."),
                 io.Sampler.Input("sampler"),
                 io.Sigmas.Input("sigmas"),
                 io.String.Input("cache_name", default="h3_long_video",
-                                tooltip="Folder name below output/h3_long. Segment latents and master.mp4 are stored here."),
+                                tooltip="Output-relative bundle folder. Supports Save Video patterns, for example h3_long_video/%seed.seed%/. Existing folders become _2, _3, and so on unless resume is enabled."),
                 io.Boolean.Input("resume", default=False,
                                  tooltip="Reuse compatible segment checkpoints. Missing or incompatible later segments are regenerated."),
                 io.Int.Input("reroll_from_segment", default=-1, min=-1, max=999, step=1,
@@ -401,7 +472,7 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
                 io.Int.Input("crf", default=18, min=0, max=51, step=1, advanced=True),
                 io.Combo.Input("ref_image_size", options=["match", "max"], default="match"),
                 io.Latent.Input("initial_latent", optional=True,
-                                tooltip="Optional sampled H3 AV latent. Only its tail is used as preroll; this node's timeline and delivered video still start at 0."),
+                                tooltip="Optional sampled H3 AV latent. Its tail guides a removable head before this node's timeline starts at 0."),
                 io.Autogrow.Input("ref_images", optional=True,
                     template=io.Autogrow.TemplatePrefix(
                         input=io.Image.Input("ref_image"), prefix="ref_image_", min=0, max=9)),
@@ -416,6 +487,7 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
                     template=io.Autogrow.TemplatePrefix(
                         input=io.Audio.Input("ref_audio"), prefix="ref_audio_", min=0, max=3)),
             ],
+            hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo],
             outputs=[
                 io.Video.Output(display_name="video"),
                 io.Latent.Output(display_name="last_latent"),
@@ -425,7 +497,7 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, model, clip, vae, audio_vae, prompt, width, height, length,
+    def execute(cls, model, clip, vae, audio_vae, prompt, width, height, length, max_raw_frames,
                 context_frames, noise_seed, sampler, sigmas, cache_name, resume,
                 reroll_from_segment, crf, ref_image_size="match", initial_latent=None,
                 ref_images=None, ref_videos=None, ref_video_audios=None, ref_audios=None):
@@ -437,15 +509,22 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
             if initial_video.shape[3] * 16 != height or initial_video.shape[4] * 16 != width:
                 raise ValueError("initial_latent resolution does not match width and height")
 
-        segments = plan_segments(length, context_frames, initial_latent is not None)
-        project = _project_directory(cache_name)
+        hidden = cls.hidden
+        cache_name = _expand_cache_name(
+            cache_name,
+            hidden.prompt if hidden is not None else None,
+            hidden.extra_pnginfo if hidden is not None else None,
+        )
+        segments = plan_segments(
+            length, context_frames, initial_latent is not None, max_raw_frames)
+        project, master_path, relative_folder = _output_paths(cache_name, resume, width, height)
         segment_paths = [project / "latents" / "segment_{:04d}.safetensors".format(segment.index) for segment in segments]
         local_prompts = [
             slice_prompt(
                 prompt,
                 segment.prompt_start_seconds,
                 segment.prompt_end_seconds,
-                segment.head_frames / FPS,
+                segment.context_frames / FPS,
             )
             for segment in segments
         ]
@@ -462,6 +541,7 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
             "width": width,
             "height": height,
             "length": length,
+            "max_raw_frames": max_raw_frames,
             "context_frames": context_frames,
             "segments": [],
         }
@@ -478,7 +558,7 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
                 reroll_from_segment < 0 or segment.index < reroll_from_segment)
             if may_reuse and checkpoint.exists():
                 cached, metadata = _load_segment(checkpoint)
-                if _metadata_matches(metadata, segment, prompt_hash, width, height):
+                if _metadata_matches(metadata, segment, prompt_hash, width, height, noise_seed):
                     previous = cached
                     completed += 1
                     manifest["segments"].append(_manifest_segment(
@@ -496,28 +576,27 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
                     max(item.raw_frames for item in segments), ref_image_size,
                     ref_images, ref_videos, ref_video_audios, ref_audios)
             latent, _ = h3._empty_av_latent(width, height, segment.raw_frames)
-            if segment.head_frames:
+            if segment.context_frames:
                 if previous is None:
                     raise ValueError("a previous H3 AV latent is required for this continuation segment")
-                latent = _add_context(latent, previous, segment.head_frames)
             conditioning = _conditioning(clip, local_prompt, ref_items, ref_blocks)
-            if segment.head_frames:
+            if segment.context_frames:
                 conditioning = _add_continuation_guide(
-                    conditioning, previous, segment.head_frames)
+                    conditioning, previous, segment.context_frames)
             guider = custom_sampler.BasicGuider.execute(model, conditioning)[0]
-            noise = custom_sampler.RandomNoise.execute((noise_seed + segment.index) & 0xffffffffffffffff)[0]
+            noise = custom_sampler.RandomNoise.execute(noise_seed)[0]
             sampled = custom_sampler.SamplerCustomAdvanced.execute(noise, guider, sampler, sigmas, latent)[0]
             previous = {"samples": sampled["samples"]}
             metadata = {
                 "schema": SCHEMA_VERSION,
                 "index": segment.index,
                 "raw_frames": segment.raw_frames,
-                "head_frames": segment.head_frames,
+                "context_frames": segment.context_frames,
                 "output_start": segment.output_start,
                 "output_frames": segment.output_frames,
                 "width": width,
                 "height": height,
-                "seed": (noise_seed + segment.index) & 0xffffffffffffffff,
+                "seed": noise_seed,
                 "prompt_sha256": prompt_hash,
             }
             _save_segment(checkpoint, previous, metadata)
@@ -529,7 +608,6 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
         if previous is None:
             raise RuntimeError("MiniMax H3 Long Video did not produce a latent")
         last_latent = _cpu_latent(previous)
-        master_path = project / "master.mp4"
         manifest["status"] = "decoding"
         _atomic_json(project / "manifest.json", manifest)
         _write_master(master_path, segment_paths, segments, vae, audio_vae, width, height, crf)
@@ -537,7 +615,6 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
         manifest["master"] = master_path.name
         _atomic_json(project / "manifest.json", manifest)
 
-        relative_folder = "h3_long/{}".format(cache_name)
         video = InputImpl.VideoFromFile(str(master_path))
         preview = ui.PreviewVideo([ui.SavedResult(master_path.name, relative_folder, io.FolderType.output)])
         return io.NodeOutput(video, last_latent, str(master_path), completed, ui=preview)

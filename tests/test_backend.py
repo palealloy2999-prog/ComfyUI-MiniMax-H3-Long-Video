@@ -15,7 +15,8 @@ from comfy_extras import nodes_minimax_h3 as h3
 from minimax_h3_long_video import nodes as long_nodes
 from minimax_h3_long_video import timeline
 from minimax_h3_long_video.nodes import (
-    _add_context, _add_continuation_guide, _load_segment, _save_segment, _write_master,
+    _add_continuation_guide, _expand_cache_name, _load_segment, _output_paths,
+    _save_segment, _write_master,
 )
 from minimax_h3_long_video.timeline import plan_segments
 
@@ -24,7 +25,8 @@ class VideoVAE:
     def decode(self, latent):
         spans = (1, 4, 4, 4, 4)
         frames = sum(spans[index % 5] for index in range(latent.shape[2]))
-        return torch.zeros((frames, 32, 32, 3))
+        values = torch.arange(frames, dtype=torch.float32) / max(1, frames - 1)
+        return values.reshape(-1, 1, 1, 1).expand(-1, 32, 32, 3)
 
 
 class AudioVAE:
@@ -36,30 +38,127 @@ class AudioVAE:
 
 
 class BackendTests(unittest.TestCase):
-    def test_continuation_guide_anchors_video_and_audio_at_frame_zero(self):
+    def test_schema_uses_cache_name_without_filename_prefix(self):
+        schema = long_nodes.MiniMaxH3LongReferenceSampler.define_schema()
+        input_ids = [input.id for input in schema.inputs]
+        self.assertIn("cache_name", input_ids)
+        self.assertNotIn("filename_prefix", input_ids)
+        self.assertIn(long_nodes.io.Hidden.prompt, schema.hidden)
+        self.assertIn(long_nodes.io.Hidden.extra_pnginfo, schema.hidden)
+
+    def test_cache_name_expands_node_input_pattern(self):
+        prompt = {
+            "460": {
+                "class_type": "PrimitiveInt",
+                "inputs": {"seed": 123456789},
+            },
+        }
+        extra_pnginfo = {
+            "workflow": {
+                "nodes": [{
+                    "id": 460,
+                    "type": "PrimitiveInt",
+                    "title": "seed",
+                    "properties": {},
+                }],
+            },
+        }
+        self.assertEqual(
+            _expand_cache_name(
+                "h3_long_video/%seed.seed%/", prompt, extra_pnginfo),
+            "h3_long_video/123456789/",
+        )
+
+    def test_cache_name_expands_frontend_primitive_value(self):
+        extra_pnginfo = {
+            "workflow": {
+                "nodes": [{
+                    "id": 455,
+                    "type": "PrimitiveNode",
+                    "title": "noise_seed",
+                    "widgets_values": [987654321, "fixed"],
+                }],
+            },
+        }
+        self.assertEqual(
+            _expand_cache_name(
+                "h3_long_video/%noise_seed.value%/", {}, extra_pnginfo),
+            "h3_long_video/987654321/",
+        )
+
+    def test_cache_name_pattern_requires_unique_node_title(self):
+        prompt = {"1": {"inputs": {"seed": 1}}, "2": {"inputs": {"seed": 2}}}
+        extra_pnginfo = {
+            "workflow": {
+                "nodes": [
+                    {"id": 1, "type": "PrimitiveInt", "title": "seed"},
+                    {"id": 2, "type": "PrimitiveInt", "title": "seed"},
+                ],
+            },
+        }
+        with self.assertRaisesRegex(ValueError, "ambiguous"):
+            _expand_cache_name("%seed.seed%", prompt, extra_pnginfo)
+
+    def test_cache_name_controls_and_numbers_bundle_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.object(long_nodes.folder_paths, "get_output_directory", return_value=directory):
+                bundle, bundle_master, bundle_relative_folder = _output_paths(
+                    "h3_long_video/seed_123/", False, 640, 360)
+                self.assertEqual(bundle, Path(directory) / "h3_long_video" / "seed_123")
+                self.assertEqual(bundle_master, bundle / "master.mp4")
+                self.assertEqual(bundle_relative_folder, str(Path("h3_long_video") / "seed_123"))
+                self.assertTrue((bundle / "latents").is_dir())
+
+                (bundle / "manifest.json").write_text("{}", encoding="utf-8")
+                numbered, numbered_master, numbered_relative = _output_paths(
+                    "h3_long_video/seed_123", False, 640, 360)
+                self.assertEqual(numbered, Path(directory) / "h3_long_video" / "seed_123_2")
+                self.assertEqual(numbered_master, numbered / "master.mp4")
+                self.assertEqual(numbered_relative, str(Path("h3_long_video") / "seed_123_2"))
+
+                third, _, _ = _output_paths(
+                    "h3_long_video/seed_123", False, 640, 360)
+                self.assertEqual(third, Path(directory) / "h3_long_video" / "seed_123_3")
+
+                empty = Path(directory) / "h3_long_video" / "empty"
+                empty.mkdir()
+                numbered_empty, _, _ = _output_paths(
+                    "h3_long_video/empty", False, 640, 360)
+                self.assertEqual(numbered_empty, Path(directory) / "h3_long_video" / "empty_2")
+
+                resumed, resumed_master, resumed_relative = _output_paths(
+                    "h3_long_video/seed_123", True, 640, 360)
+                self.assertEqual(resumed, bundle)
+                self.assertEqual(resumed_master, bundle / "master.mp4")
+                self.assertEqual(resumed_relative, bundle_relative_folder)
+                with self.assertRaisesRegex(Exception, "outside the output folder"):
+                    _output_paths("../outside/video", False, 640, 360)
+
+    def test_continuation_guide_anchors_the_previous_tail_at_frame_zero(self):
         previous, _ = h3._empty_av_latent(32, 32, 56)
-        conditioning = [[torch.zeros((1, 1, 1)), {"marker": True}]]
-        guided = _add_continuation_guide(conditioning, previous, 22)
-        keyframe = guided[0][1]["minimax_keyframes"][0]
-        self.assertEqual(keyframe["resolved_frame_index"], 0)
-        self.assertEqual(keyframe["latent"].shape[2], 7)
-        self.assertEqual(keyframe["audio_latent"].shape[-1], 37)
-        self.assertTrue(guided[0][1]["marker"])
+        original_guide = {"resolved_frame_index": 12, "latent": torch.zeros((1, 24, 1, 2, 2))}
+        conditioning = [[torch.zeros((1, 1, 1)), {
+            "marker": True,
+            "minimax_keyframes": [original_guide],
+        }]]
+        conditioned = _add_continuation_guide(conditioning, previous, 22)
+        guides = conditioned[0][1]["minimax_keyframes"]
+        self.assertIs(guides[0], original_guide)
+        guide = guides[-1]
+        self.assertEqual(guide["resolved_frame_index"], 0)
+        self.assertEqual(guide["latent"].shape[2], 7)
+        self.assertEqual(guide["audio_latent"].shape[-1], 37)
+        self.assertTrue(conditioned[0][1]["marker"])
+
+    def test_continuation_guide_rejects_a_short_previous_latent(self):
+        previous, _ = h3._empty_av_latent(32, 32, 5)
+        conditioning = [[torch.zeros((1, 1, 1)), {}]]
+        with self.assertRaisesRegex(ValueError, "shorter than context_frames"):
+            _add_continuation_guide(conditioning, previous, 22)
 
     def test_nested_context_checkpoint_and_mp4(self):
-        previous, _ = h3._empty_av_latent(32, 32, 56)
-        previous_video, previous_audio = previous["samples"].unbind()
-        previous_video.copy_(torch.arange(previous_video.numel()).reshape(previous_video.shape))
-        previous_audio.copy_(torch.arange(previous_audio.numel()).reshape(previous_audio.shape))
-
         target, _ = h3._empty_av_latent(32, 32, 56)
-        target = _add_context(target, previous, 22)
         target_video, target_audio = target["samples"].unbind()
-        video_mask, audio_mask = target["noise_mask"].unbind()
-        self.assertTrue(torch.equal(target_video[:, :, :7], previous_video[:, :, -7:]))
-        self.assertTrue(torch.equal(target_audio[..., :37], previous_audio[..., -37:]))
-        self.assertEqual(video_mask[:, :, :7].count_nonzero().item(), 0)
-        self.assertEqual(audio_mask[..., :37].count_nonzero().item(), 0)
 
         with tempfile.TemporaryDirectory() as directory:
             checkpoint = Path(directory) / "segment.safetensors"
@@ -71,21 +170,31 @@ class BackendTests(unittest.TestCase):
             self.assertTrue(torch.equal(loaded_audio, target_audio))
 
             master = Path(directory) / "master.mp4"
-            segment = plan_segments(24, 22, True)[0]
+            segment = plan_segments(24, 22, True, 124)[0]
             _write_master(master, [checkpoint], [segment], VideoVAE(), AudioVAE(), 32, 32, 28)
             self.assertTrue(master.is_file())
             import av
             with av.open(str(master)) as container:
                 self.assertEqual(len(container.streams.video), 1)
                 self.assertEqual(len(container.streams.audio), 1)
+                first_frame = next(container.decode(video=0)).to_ndarray(format="rgb24")
+                self.assertGreater(first_frame.mean(), 80)
 
     def test_execute_reuses_completed_segments(self):
+        noise_seeds = []
+
+        def fake_noise(seed):
+            noise_seeds.append(seed)
+            return ("noise",)
+
         class FakeSampler:
             calls = 0
 
             @classmethod
             def execute(cls, noise, guider, sampler, sigmas, latent):
                 cls.calls += 1
+                if "noise_mask" in latent:
+                    raise AssertionError("continuation segments must not use a hard latent mask")
                 return ({"samples": latent["samples"]},)
 
         with tempfile.TemporaryDirectory() as directory:
@@ -96,29 +205,36 @@ class BackendTests(unittest.TestCase):
                 path.write_bytes(b"mp4")
 
             patches = (
-                mock.patch.object(long_nodes, "_project_directory", return_value=project),
+                mock.patch.object(
+                    long_nodes, "_output_paths",
+                    return_value=(project, project / "master.mp4", "h3_long_video/test"),
+                ),
                 mock.patch.object(long_nodes, "_prepare_references", return_value=([], [])),
-                mock.patch.object(long_nodes, "_conditioning", return_value="conditioning"),
+                mock.patch.object(
+                    long_nodes, "_conditioning",
+                    return_value=[[torch.zeros((1, 1, 1)), {}]],
+                ),
                 mock.patch.object(long_nodes, "_write_master", side_effect=fake_master),
                 mock.patch.object(long_nodes.custom_sampler.BasicGuider, "execute", return_value=("guider",)),
-                mock.patch.object(long_nodes.custom_sampler.RandomNoise, "execute", return_value=("noise",)),
+                mock.patch.object(long_nodes.custom_sampler.RandomNoise, "execute", side_effect=fake_noise),
                 mock.patch.object(long_nodes.custom_sampler.SamplerCustomAdvanced, "execute", side_effect=FakeSampler.execute),
-                mock.patch.object(timeline, "MAX_RAW_FRAMES", 345),
             )
             for patch in patches:
                 patch.start()
             try:
                 first = long_nodes.MiniMaxH3LongReferenceSampler.execute(
                     None, None, VideoVAE(), AudioVAE(), "A continuous shot", 32, 32, 360,
-                    "22", 1, "sampler", torch.tensor([1.0, 0.0]), "test", False, -1, 28)
+                    345, "22", 1, "sampler", torch.tensor([1.0, 0.0]), "test", False, -1, 28)
                 self.assertEqual(first[3], 2)
                 self.assertEqual(FakeSampler.calls, 2)
+                self.assertEqual(noise_seeds, [1, 1])
 
                 second = long_nodes.MiniMaxH3LongReferenceSampler.execute(
                     None, None, VideoVAE(), AudioVAE(), "A continuous shot", 32, 32, 360,
-                    "22", 1, "sampler", torch.tensor([1.0, 0.0]), "test", True, -1, 28)
+                    345, "22", 1, "sampler", torch.tensor([1.0, 0.0]), "test", True, -1, 28)
                 self.assertEqual(second[3], 2)
                 self.assertEqual(FakeSampler.calls, 2)
+                self.assertEqual(noise_seeds, [1, 1])
             finally:
                 for patch in reversed(patches):
                     patch.stop()
