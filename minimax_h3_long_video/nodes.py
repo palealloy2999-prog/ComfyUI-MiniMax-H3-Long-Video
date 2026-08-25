@@ -7,7 +7,6 @@ import json
 import math
 import os
 import re
-import tempfile
 import time
 from fractions import Fraction
 from pathlib import Path
@@ -30,9 +29,9 @@ from typing_extensions import override
 from .timeline import FPS, Segment, plan_segments, slice_prompt
 
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 UPSCALE_SCHEMA_VERSION = 1
-LOOP_UPSCALE_SCHEMA_VERSION = 1
+LOOP_UPSCALE_SCHEMA_VERSION = 2
 
 LONG_H3_UPSCALE_JOB = io.Custom("MINIMAX_H3_LONG_UPSCALE_JOB")
 LONG_H3_SEGMENT = io.Custom("MINIMAX_H3_LONG_SEGMENT")
@@ -201,6 +200,44 @@ def _source_bundle(source_path):
     if not manifest_path.is_file():
         raise ValueError("source_path does not contain a Long H3 manifest.json")
     return candidate, manifest_path
+
+
+def _loop_upscale_source(project, manifest):
+    output_root = Path(folder_paths.get_output_directory()).resolve()
+    if not folder_paths.is_within_directory(str(output_root), str(project)):
+        raise ValueError("processed Long H3 bundle path is invalid")
+    source_name = manifest.get("source")
+    if not isinstance(source_name, str):
+        raise ValueError("processed Long H3 manifest has no source bundle path")
+    source = (output_root / source_name).resolve()
+    if (not folder_paths.is_within_directory(str(output_root), str(source)) or
+            not (source / "manifest.json").is_file()):
+        raise ValueError("processed Long H3 source bundle path is invalid")
+    if (project.parent != source or
+            re.fullmatch(r"upscale(?:_(?:[2-9]|\d{2,}))?", project.name) is None):
+        raise ValueError("processed Long H3 bundle is not an upscale child of its source")
+    return output_root, source
+
+
+def _incomplete_loop_upscale_bundle(source):
+    candidates = []
+    for project in source.iterdir():
+        match = re.fullmatch(r"upscale(?:_(?:([2-9])|(\d{2,})))?", project.name)
+        if project.is_dir() and match is not None:
+            index = int(match.group(1) or match.group(2) or 1)
+            candidates.append((index, project.resolve()))
+    for _, project in sorted(candidates, reverse=True):
+        manifest_path = project / "manifest.json"
+        if not manifest_path.is_file():
+            continue
+        with manifest_path.open("r", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        if (manifest.get("schema") == LOOP_UPSCALE_SCHEMA_VERSION and
+                manifest.get("kind") == "minimax_h3_long_ultimate_upscale" and
+                manifest.get("status") in ("processing", "decoding")):
+            _loop_upscale_source(project, manifest)
+            return project, manifest
+    raise ValueError("no incomplete Long H3 upscale bundle was found under the source bundle")
 
 
 def _manifest_segments(source, manifest):
@@ -450,21 +487,191 @@ def _prompt_hash(prompt):
     return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
 
 
-def _metadata_matches(metadata, segment, prompt_hash, width, height, noise_seed):
+_GENERATION_GRAPH_INPUTS = frozenset((
+    "model", "clip", "vae", "audio_vae", "sampler", "sigmas", "initial_latent",
+))
+_REFERENCE_INPUT_PREFIXES = (
+    "ref_images.", "ref_videos.", "ref_video_audios.", "ref_audios.",
+    "ref_image_", "ref_video_", "ref_video_audio_", "ref_audio_",
+)
+
+
+def _generation_input(name):
+    return name in _GENERATION_GRAPH_INPUTS or name.startswith(_REFERENCE_INPUT_PREFIXES)
+
+
+def _prompt_graph_signature(prompt, unique_id):
+    if not isinstance(prompt, dict) or unique_id is None:
+        return None
+
+    def visit(node_id, root, visiting):
+        node_id = str(node_id)
+        node = prompt.get(node_id)
+        if not isinstance(node, dict):
+            return None
+        if node_id in visiting:
+            raise ValueError("generation input graph contains a cycle")
+        visiting.add(node_id)
+        inputs = node.get("inputs")
+        normalized = {}
+        if isinstance(inputs, dict):
+            for name in sorted(inputs):
+                if root and not _generation_input(name):
+                    continue
+                value = inputs[name]
+                if (isinstance(value, (list, tuple)) and len(value) == 2 and
+                        str(value[0]) in prompt and isinstance(value[1], int)):
+                    normalized[name] = {
+                        "node": visit(value[0], False, visiting),
+                        "output": value[1],
+                    }
+                else:
+                    normalized[name] = value
+        visiting.remove(node_id)
+        return {"class_type": node.get("class_type"), "inputs": normalized}
+
+    return visit(unique_id, True, set())
+
+
+def _stable_descriptor(value):
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, dict):
+        return {str(key): _stable_descriptor(item) for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))}
+    if isinstance(value, (list, tuple)):
+        return [_stable_descriptor(item) for item in value]
+    if callable(value):
+        return "{}.{}".format(
+            getattr(value, "__module__", type(value).__module__),
+            getattr(value, "__qualname__", type(value).__qualname__),
+        )
+    return "{}.{}".format(type(value).__module__, type(value).__qualname__)
+
+
+def _sampler_descriptor(sampler):
+    result = {"type": _stable_descriptor(sampler)}
+    for name in ("sampler_function", "extra_options", "inpaint_options"):
+        if hasattr(sampler, name):
+            result[name] = _stable_descriptor(getattr(sampler, name))
+    return result
+
+
+def _update_runtime_hash(digest, value):
+    if torch.is_tensor(value):
+        digest.update(json.dumps({
+            "shape": list(value.shape),
+            "dtype": str(value.dtype),
+        }, sort_keys=True).encode("utf-8"))
+        if value.numel():
+            flat = value.detach().reshape(-1)
+            step = max(1, math.ceil(flat.numel() / 65536))
+            sample = flat[::step][:65536].to(device="cpu", copy=True).contiguous()
+            digest.update(sample.view(torch.uint8).numpy().tobytes())
+        return
+    if getattr(value, "is_nested", False):
+        for item in value.unbind():
+            _update_runtime_hash(digest, item)
+        return
+    if isinstance(value, dict):
+        for key in sorted(value, key=str):
+            digest.update(str(key).encode("utf-8"))
+            _update_runtime_hash(digest, value[key])
+        return
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _update_runtime_hash(digest, item)
+        return
+    digest.update(json.dumps(_stable_descriptor(value), sort_keys=True).encode("utf-8"))
+
+
+def _generation_fingerprint(graph_prompt, unique_id, model, clip, sampler, sigmas,
+                            ref_image_size, initial_latent, ref_images, ref_videos,
+                            ref_video_audios, ref_audios):
+    payload = {
+        "schema": SCHEMA_VERSION,
+        "graph": _prompt_graph_signature(graph_prompt, unique_id),
+        "model_type": _stable_descriptor(model),
+        "clip_type": _stable_descriptor(clip),
+        "sampler": _sampler_descriptor(sampler),
+        "ref_image_size": ref_image_size,
+    }
+    digest = hashlib.sha256(json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+    for name, value in (
+            ("sigmas", sigmas),
+            ("initial_latent", initial_latent),
+            ("ref_images", ref_images),
+            ("ref_videos", ref_videos),
+            ("ref_video_audios", ref_video_audios),
+            ("ref_audios", ref_audios)):
+        digest.update(name.encode("utf-8"))
+        _update_runtime_hash(digest, value)
+    return digest.hexdigest()
+
+
+def _segment_lineage(generation_fingerprint, predecessor_lineage, segment, prompt_hash):
+    payload = {
+        "generation_fingerprint": generation_fingerprint,
+        "predecessor_lineage": predecessor_lineage,
+        "index": segment.index,
+        "raw_frames": segment.raw_frames,
+        "context_frames": segment.context_frames,
+        "output_start": segment.output_start,
+        "output_frames": segment.output_frames,
+        "prompt_sha256": prompt_hash,
+    }
+    return hashlib.sha256(json.dumps(
+        payload, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def _metadata_matches(metadata, segment, prompt_hash, width, height, noise_seed,
+                      generation_fingerprint, predecessor_lineage, lineage):
     expected = {
         "schema": str(SCHEMA_VERSION),
+        "index": str(segment.index),
         "raw_frames": str(segment.raw_frames),
         "context_frames": str(segment.context_frames),
+        "output_start": str(segment.output_start),
         "output_frames": str(segment.output_frames),
         "width": str(width),
         "height": str(height),
         "seed": str(noise_seed),
         "prompt_sha256": prompt_hash,
+        "generation_fingerprint": generation_fingerprint,
+        "predecessor_lineage": predecessor_lineage,
+        "lineage": lineage,
     }
     return all(metadata.get(key) == value for key, value in expected.items())
 
 
-def _manifest_segment(segment, status, checkpoint, prompt_hash, seed):
+def _validate_preserved_segments(segment_paths, segments, local_prompts, reroll_from_segment,
+                                 width, height, noise_seed, generation_fingerprint,
+                                 has_initial_latent):
+    if reroll_from_segment <= 0:
+        return
+    predecessor_lineage = "initial" if has_initial_latent else "root"
+    for checkpoint, segment, local_prompt in zip(segment_paths, segments, local_prompts):
+        if segment.index >= reroll_from_segment:
+            break
+        if not checkpoint.is_file():
+            raise ValueError(
+                "segment {} cannot be kept because its checkpoint is missing; reroll from this segment or earlier".format(
+                    segment.index))
+        with safe_open(str(checkpoint), framework="pt", device="cpu") as handle:
+            metadata = handle.metadata() or {}
+        prompt_hash = _prompt_hash(local_prompt)
+        lineage = _segment_lineage(
+            generation_fingerprint, predecessor_lineage, segment, prompt_hash)
+        if not _metadata_matches(
+                metadata, segment, prompt_hash, width, height, noise_seed,
+                generation_fingerprint, predecessor_lineage, lineage):
+            raise ValueError(
+                "segment {} no longer matches the current generation inputs; reroll from this segment or earlier".format(
+                    segment.index))
+        predecessor_lineage = lineage
+
+
+def _manifest_segment(segment, status, checkpoint, prompt_hash, seed, lineage):
     return {
         "index": segment.index,
         "status": status,
@@ -480,6 +687,7 @@ def _manifest_segment(segment, status, checkpoint, prompt_hash, seed):
         "context_frames": segment.context_frames,
         "seed": seed,
         "prompt_sha256": prompt_hash,
+        "lineage": lineage,
     }
 
 
@@ -586,7 +794,9 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
                 io.Clip.Input("clip"),
                 io.Vae.Input("vae"),
                 io.Vae.Input("audio_vae"),
-                io.String.Input("prompt", multiline=True, dynamic_prompts=True),
+                io.String.Input(
+                    "prompt", multiline=True, dynamic_prompts=True,
+                    tooltip="Use a timestamped [Shot N] timeline. Put reusable instructions after the final Shot under a standalone [Global Instructions] line so every segment receives them."),
                 io.Int.Input("width", default=1344, min=32, max=4096, step=32),
                 io.Int.Input("height", default=768, min=32, max=4096, step=32),
                 io.Int.Input("length", default=720, min=24, max=86400, step=1,
@@ -623,7 +833,7 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
                     template=io.Autogrow.TemplatePrefix(
                         input=io.Audio.Input("ref_audio"), prefix="ref_audio_", min=0, max=3)),
             ],
-            hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo],
+            hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo, io.Hidden.unique_id],
             outputs=[
                 io.Video.Output(display_name="video"),
                 io.Latent.Output(display_name="last_latent"),
@@ -640,17 +850,23 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
         if width % 32 or height % 32:
             raise ValueError("width and height must be multiples of 32")
         context_frames = int(context_frames)
+        initial_video = None
         if initial_latent is not None:
             initial_video, _ = _streams(initial_latent)
             if initial_video.shape[3] * 16 != height or initial_video.shape[4] * 16 != width:
                 raise ValueError("initial_latent resolution does not match width and height")
 
         hidden = cls.hidden
+        graph_prompt = hidden.prompt if hidden is not None else None
+        unique_id = hidden.unique_id if hidden is not None else None
         cache_name = _expand_cache_name(
             cache_name,
-            hidden.prompt if hidden is not None else None,
+            graph_prompt,
             hidden.extra_pnginfo if hidden is not None else None,
         )
+        generation_fingerprint = _generation_fingerprint(
+            graph_prompt, unique_id, model, clip, sampler, sigmas, ref_image_size,
+            initial_latent, ref_images, ref_videos, ref_video_audios, ref_audios)
         segments = plan_segments(
             length, context_frames, initial_latent is not None, max_raw_frames)
         project, master_path, relative_folder = _output_paths(cache_name, resume, width, height)
@@ -667,6 +883,11 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
             )
             for segment in segments
         ]
+        if resume:
+            _validate_preserved_segments(
+                segment_paths, segments, local_prompts, reroll_from_segment,
+                width, height, noise_seed, generation_fingerprint,
+                initial_latent is not None)
         prompt_directory = project / "prompts"
         prompt_directory.mkdir(exist_ok=True)
         for segment, local_prompt in zip(segments, local_prompts):
@@ -685,6 +906,7 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
             "max_raw_frames": max_raw_frames,
             "context_frames": context_frames,
             "seed": noise_seed,
+            "generation_fingerprint": generation_fingerprint,
             "segments": [],
         }
         _atomic_json(project / "manifest.json", manifest)
@@ -694,22 +916,34 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
         completed = 0
         ref_items = None
         ref_blocks = None
+        latent = None
+        conditioning = None
+        guider = None
+        noise = None
+        sampled = None
+        cached = None
+        predecessor_lineage = "initial" if initial_latent is not None else "root"
         for segment, checkpoint, local_prompt in zip(segments, segment_paths, local_prompts):
             prompt_hash = _prompt_hash(local_prompt)
+            lineage = _segment_lineage(
+                generation_fingerprint, predecessor_lineage, segment, prompt_hash)
             may_reuse = resume and not generated and (
                 reroll_from_segment < 0 or segment.index < reroll_from_segment)
             if may_reuse and checkpoint.exists():
                 cached, metadata = _load_segment(checkpoint)
-                if _metadata_matches(metadata, segment, prompt_hash, width, height, noise_seed):
+                if _metadata_matches(
+                        metadata, segment, prompt_hash, width, height, noise_seed,
+                        generation_fingerprint, predecessor_lineage, lineage):
                     previous = cached
                     completed += 1
                     manifest["segments"].append(_manifest_segment(
-                        segment, "reused", checkpoint, prompt_hash, noise_seed))
+                        segment, "reused", checkpoint, prompt_hash, noise_seed, lineage))
                     _atomic_json(project / "manifest.json", manifest)
+                    predecessor_lineage = lineage
                     continue
                 if reroll_from_segment >= 0:
                     raise ValueError(
-                        "segment {} no longer matches this timeline; reroll from this segment or earlier".format(segment.index))
+                        "segment {} no longer matches the current generation inputs; reroll from this segment or earlier".format(segment.index))
 
             generated = True
             if ref_items is None:
@@ -740,19 +974,43 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
                 "height": height,
                 "seed": noise_seed,
                 "prompt_sha256": prompt_hash,
+                "generation_fingerprint": generation_fingerprint,
+                "predecessor_lineage": predecessor_lineage,
+                "lineage": lineage,
             }
             _save_segment(checkpoint, previous, metadata)
             completed += 1
             manifest["segments"].append(_manifest_segment(
-                segment, "generated", checkpoint, prompt_hash, noise_seed))
+                segment, "generated", checkpoint, prompt_hash, noise_seed, lineage))
             _atomic_json(project / "manifest.json", manifest)
+            predecessor_lineage = lineage
 
         if previous is None:
             raise RuntimeError("MiniMax H3 Long Video did not produce a latent")
-        last_latent = _cpu_latent(previous)
         manifest["status"] = "decoding"
         _atomic_json(project / "manifest.json", manifest)
+        previous = None
+        latent = None
+        conditioning = None
+        guider = None
+        noise = None
+        sampled = None
+        cached = None
+        ref_items = None
+        ref_blocks = None
+        model = None
+        clip = None
+        sampler = None
+        sigmas = None
+        initial_latent = None
+        initial_video = None
+        ref_images = None
+        ref_videos = None
+        ref_video_audios = None
+        ref_audios = None
         _write_master(master_path, segment_paths, segments, vae, audio_vae, width, height, crf)
+        last_latent, _ = _load_segment(segment_paths[-1])
+        last_latent = _cpu_latent(last_latent)
         manifest["status"] = "complete"
         manifest["master"] = master_path.name
         _atomic_json(project / "manifest.json", manifest)
@@ -858,7 +1116,6 @@ class MiniMaxH3LongLatentUpscale(io.ComfyNode):
 
         actual_width = None
         actual_height = None
-        last_latent = None
         completed = 0
         for segment, source_checkpoint, checkpoint in zip(
                 segments, source_checkpoints, checkpoints):
@@ -911,22 +1168,23 @@ class MiniMaxH3LongLatentUpscale(io.ComfyNode):
                 "context_frames": segment.context_frames,
             })
             _atomic_json(project / "manifest.json", manifest)
-            if segment.index == segments[-1].index:
-                last_latent = _cpu_latent(upscaled)
             latent = None
             upscaled = None
             video_latent = None
             audio_latent = None
 
-        if last_latent is None or actual_width is None or actual_height is None:
+        if actual_width is None or actual_height is None:
             raise RuntimeError("MiniMax H3 Long Latent Upscale produced no segments")
         manifest["width"] = actual_width
         manifest["height"] = actual_height
         manifest["status"] = "decoding"
         _atomic_json(project / "manifest.json", manifest)
+        upscaler = None
         _write_master(
             master_path, checkpoints, segments, vae, audio_vae,
             actual_width, actual_height, crf)
+        last_latent, _ = _load_segment(checkpoints[-1])
+        last_latent = _cpu_latent(last_latent)
         manifest["status"] = "complete"
         manifest["master"] = master_path.name
         _atomic_json(project / "manifest.json", manifest)
@@ -946,11 +1204,13 @@ class MiniMaxH3LongUpscalePrepare(io.ComfyNode):
             node_id="MiniMaxH3LongUpscalePrepare",
             display_name="MiniMax H3 Long Upscale Prepare",
             category="sampling/minimax/long upscale",
-            description="Prepare a Long H3 bundle and temporary segment storage for processing in an EasyUse For Loop.",
+            description="Prepare a persistent upscale bundle for segment processing in an EasyUse For Loop.",
             not_idempotent=True,
             inputs=[
                 io.String.Input("master_path", default="h3_long_video/master.mp4",
                                 tooltip="Connect MiniMax H3 Long Reference Sampler's master_path, or enter a Long H3 bundle folder, manifest.json, or master.mp4 inside the ComfyUI output folder."),
+                io.Boolean.Input("resume", default=False, advanced=True,
+                                 tooltip="Continue the newest incomplete upscale bundle under this source and process only its missing segments. Use the same upscale workflow settings."),
             ],
             outputs=[
                 LONG_H3_UPSCALE_JOB.Output("job"),
@@ -959,7 +1219,11 @@ class MiniMaxH3LongUpscalePrepare(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, master_path):
+    def fingerprint_inputs(cls, master_path, resume=False):
+        return time.time_ns()
+
+    @classmethod
+    def execute(cls, master_path, resume=False):
         source, manifest_path = _source_bundle(master_path)
         with manifest_path.open("r", encoding="utf-8") as handle:
             source_manifest = json.load(handle)
@@ -971,16 +1235,24 @@ class MiniMaxH3LongUpscalePrepare(io.ComfyNode):
         source_height = source_manifest.get("height")
         if not isinstance(source_width, int) or not isinstance(source_height, int):
             raise ValueError("source Long H3 manifest has no valid resolution")
-        temp_root = Path(folder_paths.get_temp_directory()).resolve()
-        temp_root.mkdir(parents=True, exist_ok=True)
-        project = Path(tempfile.mkdtemp(
-            prefix="minimax_h3_long_upscale_", dir=str(temp_root))).resolve()
-        (project / "latents").mkdir()
+        output_root = Path(folder_paths.get_output_directory()).resolve()
+        if resume:
+            project, previous_manifest = _incomplete_loop_upscale_bundle(source)
+            previous_entries = previous_manifest.get("segments")
+            if not isinstance(previous_entries, list) or len(previous_entries) != len(segments):
+                raise ValueError("incomplete Long H3 upscale bundle no longer matches the source timeline")
+        else:
+            output_cache_name = os.path.relpath(source / "upscale", output_root)
+            project, _, _ = _output_paths(
+                output_cache_name, False, source_width, source_height)
+            previous_manifest = None
+            previous_entries = None
         prompt_directory = project / "prompts"
-        prompt_directory.mkdir()
+        prompt_directory.mkdir(exist_ok=True)
 
         source_entries = source_manifest["segments"]
         job_segments = []
+        all_job_segments = []
         output_entries = []
         for segment, source_checkpoint, source_entry in zip(
                 segments, source_checkpoints, source_entries):
@@ -1006,6 +1278,8 @@ class MiniMaxH3LongUpscalePrepare(io.ComfyNode):
             output_prompt = prompt_directory / "segment_{:04d}.txt".format(segment.index)
             _atomic_text(output_prompt, prompt)
             output_checkpoint = project / "latents" / "segment_{:04d}.safetensors".format(segment.index)
+            source_size, source_mtime = _file_fingerprint(source_checkpoint)
+            prompt_hash = _prompt_hash(prompt)
             item = {
                 "index": segment.index,
                 "raw_frames": segment.raw_frames,
@@ -1019,13 +1293,16 @@ class MiniMaxH3LongUpscalePrepare(io.ComfyNode):
                 "output_checkpoint": str(output_checkpoint),
                 "prompt_path": str(output_prompt),
             }
-            job_segments.append(item)
-            output_entries.append({
+            all_job_segments.append(item)
+            output_entry = {
                 "index": segment.index,
                 "status": "pending",
                 "file": output_checkpoint.name,
                 "source_file": source_checkpoint.name,
+                "source_size": source_size,
+                "source_mtime_ns": source_mtime,
                 "prompt_file": "prompts/{}".format(output_prompt.name),
+                "prompt_sha256": prompt_hash,
                 "raw_frames": segment.raw_frames,
                 "context_frames": segment.context_frames,
                 "output_start": segment.output_start,
@@ -1033,7 +1310,41 @@ class MiniMaxH3LongUpscalePrepare(io.ComfyNode):
                 "seed": seed,
                 "timeline_start": segment.output_start / FPS,
                 "timeline_end": (segment.output_start + segment.output_frames) / FPS,
-            })
+            }
+            if resume:
+                previous = previous_entries[segment.index]
+                if previous.get("index") != segment.index:
+                    raise ValueError("incomplete Long H3 upscale bundle has invalid segment ordering")
+                source_matches = all(previous.get(key) == output_entry[key] for key in (
+                    "source_file", "source_size", "source_mtime_ns", "prompt_sha256",
+                    "raw_frames", "context_frames", "output_start", "output_frames",
+                ))
+                if previous.get("status") == "saved" and source_matches and output_checkpoint.is_file():
+                    with safe_open(str(output_checkpoint), framework="pt", device="cpu") as handle:
+                        metadata = handle.metadata() or {}
+                        keys = set(handle.keys())
+                    expected = {
+                        "upscale_schema": str(LOOP_UPSCALE_SCHEMA_VERSION),
+                        "index": str(segment.index),
+                        "raw_frames": str(segment.raw_frames),
+                        "context_frames": str(segment.context_frames),
+                        "output_start": str(segment.output_start),
+                        "output_frames": str(segment.output_frames),
+                        "width": str(previous.get("width")),
+                        "height": str(previous.get("height")),
+                    }
+                    if {"video", "audio"}.issubset(keys) and all(
+                            metadata.get(key) == value for key, value in expected.items()):
+                        output_entry["status"] = "saved"
+                        output_entry["width"] = previous["width"]
+                        output_entry["height"] = previous["height"]
+            if output_entry["status"] == "pending":
+                job_segments.append(item)
+            output_entries.append(output_entry)
+
+        if resume and not job_segments:
+            output_entries[-1]["status"] = "pending"
+            job_segments.append(all_job_segments[-1])
 
         output_manifest = {
             "schema": LOOP_UPSCALE_SCHEMA_VERSION,
@@ -1049,10 +1360,15 @@ class MiniMaxH3LongUpscalePrepare(io.ComfyNode):
             "length": source_manifest.get("length"),
             "segments": output_entries,
         }
+        if previous_manifest is not None:
+            if isinstance(previous_manifest.get("width"), int) and isinstance(previous_manifest.get("height"), int):
+                output_manifest["width"] = previous_manifest["width"]
+                output_manifest["height"] = previous_manifest["height"]
         _atomic_json(project / "manifest.json", output_manifest)
         job = {
             "project": str(project),
             "segment_count": len(job_segments),
+            "total_segment_count": len(output_entries),
             "segments": job_segments,
         }
         return io.NodeOutput(job, len(job_segments))
@@ -1087,18 +1403,19 @@ class MiniMaxH3LongSegmentLoad(io.ComfyNode):
         if not isinstance(segments, list) or not 0 <= segment_index < len(segments):
             raise ValueError("segment_index is outside the prepared Long H3 job")
         segment = segments[segment_index]
-        if segment.get("index") != segment_index:
-            raise ValueError("prepared Long H3 job has invalid segment ordering")
+        index = segment.get("index")
+        if not isinstance(index, int):
+            raise ValueError("prepared Long H3 job has an invalid segment index")
         checkpoint = Path(segment["source_checkpoint"])
         prompt_path = Path(segment["prompt_path"])
         if not checkpoint.is_file() or not prompt_path.is_file():
-            raise ValueError("prepared Long H3 source files are missing for segment {}".format(segment_index))
+            raise ValueError("prepared Long H3 source files are missing for segment {}".format(index))
         latent, _ = _load_segment(checkpoint)
         with prompt_path.open("r", encoding="utf-8") as handle:
             prompt = handle.read()
         token = dict(segment)
         token["project"] = job["project"]
-        token["segment_count"] = job["segment_count"]
+        token["segment_count"] = job["total_segment_count"]
         return io.NodeOutput(
             latent, prompt, segment["seed"], segment["width"],
             segment["height"], segment["raw_frames"], token)
@@ -1111,7 +1428,7 @@ class MiniMaxH3LongSegmentSave(io.ComfyNode):
             node_id="MiniMaxH3LongSegmentSave",
             display_name="MiniMax H3 Long Segment Save",
             category="sampling/minimax/long upscale",
-            description="Save one processed H3 AV latent and pass a small progress value to EasyUse For Loop End.",
+            description="Save one processed H3 AV latent to its persistent upscale bundle and pass a small progress value to EasyUse For Loop End.",
             inputs=[
                 io.Latent.Input("latent"),
                 LONG_H3_SEGMENT.Input("segment"),
@@ -1121,17 +1438,39 @@ class MiniMaxH3LongSegmentSave(io.ComfyNode):
 
     @classmethod
     def execute(cls, latent, segment):
-        video, _ = _streams(latent)
+        video, audio = _streams(latent)
         expected_tokens = h3.video_latent_t(segment["raw_frames"])
         if video.shape[2] != expected_tokens:
             raise ValueError(
                 "processed segment {} changed its temporal length".format(segment["index"]))
+        expected_audio_tokens = round(
+            segment["raw_frames"] / FPS * h3.AUDIO_LATENT_FPS)
+        if audio.shape[-1] != expected_audio_tokens:
+            raise ValueError(
+                "processed segment {} changed its audio length".format(segment["index"]))
         width = video.shape[-1] * 16
         height = video.shape[-2] * 16
-        checkpoint = Path(segment["output_checkpoint"])
-        project = Path(segment["project"])
-        if checkpoint.parent != (project / "latents").resolve():
+        checkpoint = Path(segment["output_checkpoint"]).resolve()
+        project = Path(segment["project"]).resolve()
+        manifest_path = project / "manifest.json"
+        with manifest_path.open("r", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        if (manifest.get("schema") != LOOP_UPSCALE_SCHEMA_VERSION or
+                manifest.get("kind") != "minimax_h3_long_ultimate_upscale" or
+                manifest.get("status") != "processing"):
+            raise ValueError("processed Long H3 bundle has an incompatible manifest")
+        _loop_upscale_source(project, manifest)
+        entries = manifest.get("segments")
+        index = segment["index"]
+        if not isinstance(entries, list) or index >= len(entries) or entries[index].get("index") != index:
+            raise ValueError("processed Long H3 manifest has invalid segment ordering")
+        entry = entries[index]
+        expected_checkpoint = (project / "latents" / entry["file"]).resolve()
+        if (checkpoint != expected_checkpoint or
+                checkpoint.parent != (project / "latents").resolve()):
             raise ValueError("processed segment output path is invalid")
+        if entry.get("status") != "pending":
+            raise ValueError("processed segment {} has already been saved".format(index))
         metadata = {
             "upscale_schema": LOOP_UPSCALE_SCHEMA_VERSION,
             "index": segment["index"],
@@ -1144,13 +1483,6 @@ class MiniMaxH3LongSegmentSave(io.ComfyNode):
         }
         _save_segment(checkpoint, latent, metadata)
 
-        manifest_path = project / "manifest.json"
-        with manifest_path.open("r", encoding="utf-8") as handle:
-            manifest = json.load(handle)
-        entries = manifest.get("segments")
-        index = segment["index"]
-        if not isinstance(entries, list) or index >= len(entries) or entries[index].get("index") != index:
-            raise ValueError("processed Long H3 manifest has invalid segment ordering")
         existing_width = manifest.get("width")
         existing_height = manifest.get("height")
         if existing_width is not None and (existing_width != width or existing_height != height):
@@ -1194,75 +1526,49 @@ class MiniMaxH3LongUpscaleAssemble(io.ComfyNode):
 
     @classmethod
     def execute(cls, progress, vae, audio_vae, crf):
-        staging = Path(progress["project"]).resolve()
-        temp_root = Path(folder_paths.get_temp_directory()).resolve()
-        if (staging.parent != temp_root or
-                not staging.name.startswith("minimax_h3_long_upscale_") or
-                not folder_paths.is_within_directory(str(temp_root), str(staging))):
-            raise ValueError("processed Long H3 temporary job path is invalid")
-        staging_manifest_path = staging / "manifest.json"
-        with staging_manifest_path.open("r", encoding="utf-8") as handle:
+        project = Path(progress["project"]).resolve()
+        manifest_path = project / "manifest.json"
+        with manifest_path.open("r", encoding="utf-8") as handle:
             manifest = json.load(handle)
+        if (manifest.get("schema") != LOOP_UPSCALE_SCHEMA_VERSION or
+                manifest.get("kind") != "minimax_h3_long_ultimate_upscale"):
+            raise ValueError("processed Long H3 bundle has an incompatible manifest")
+        output_root, _ = _loop_upscale_source(project, manifest)
         entries = manifest.get("segments")
         count = progress.get("segment_count")
         if not isinstance(entries, list) or not isinstance(count, int) or len(entries) != count:
             raise ValueError("processed Long H3 manifest has an invalid segment count")
         segments = []
-        staging_checkpoints = []
-        staging_prompts = []
+        checkpoints = []
         for index, entry in enumerate(entries):
             if entry.get("index") != index or entry.get("status") != "saved":
                 raise ValueError("Long H3 segment {} has not been processed".format(index))
-            checkpoint = (staging / "latents" / entry["file"]).resolve()
-            if checkpoint.parent != (staging / "latents").resolve() or not checkpoint.is_file():
+            checkpoint = (project / "latents" / entry["file"]).resolve()
+            if checkpoint.parent != (project / "latents").resolve() or not checkpoint.is_file():
                 raise ValueError("processed Long H3 checkpoint is missing: {}".format(entry["file"]))
-            prompt = (staging / entry["prompt_file"]).resolve()
-            if (not folder_paths.is_within_directory(str(staging), str(prompt)) or
+            prompt = (project / entry["prompt_file"]).resolve()
+            if (not folder_paths.is_within_directory(str(project), str(prompt)) or
                     not prompt.is_file()):
                 raise ValueError("processed Long H3 prompt is missing: {}".format(entry["prompt_file"]))
             segments.append(Segment(
                 index, int(entry["raw_frames"]), int(entry["context_frames"]),
                 int(entry["output_start"]), int(entry["output_frames"])))
-            staging_checkpoints.append(checkpoint)
-            staging_prompts.append(prompt)
+            checkpoints.append(checkpoint)
         width = manifest.get("width")
         height = manifest.get("height")
         if not isinstance(width, int) or not isinstance(height, int):
             raise ValueError("processed Long H3 segments have no output resolution")
 
-        output_root = Path(folder_paths.get_output_directory()).resolve()
-        source_name = manifest.get("source")
-        if not isinstance(source_name, str):
-            raise ValueError("processed Long H3 manifest has no source bundle path")
-        source = (output_root / source_name).resolve()
-        if (not folder_paths.is_within_directory(str(output_root), str(source)) or
-                not (source / "manifest.json").is_file()):
-            raise ValueError("processed Long H3 source bundle path is invalid")
-        output_cache_name = os.path.relpath(source / "upscale", output_root)
-        project, master_path, relative_folder = _output_paths(
-            output_cache_name, False, width, height)
-        prompt_directory = project / "prompts"
-        prompt_directory.mkdir(exist_ok=True)
-        checkpoints = []
-        for entry, staging_checkpoint, staging_prompt in zip(
-                entries, staging_checkpoints, staging_prompts):
-            checkpoint = project / "latents" / entry["file"]
-            os.replace(staging_checkpoint, checkpoint)
-            os.replace(staging_prompt, prompt_directory / staging_prompt.name)
-            checkpoints.append(checkpoint)
-
         manifest["status"] = "decoding"
-        _atomic_json(project / "manifest.json", manifest)
-        staging_manifest_path.unlink()
-        (staging / "latents").rmdir()
-        (staging / "prompts").rmdir()
-        staging.rmdir()
+        _atomic_json(manifest_path, manifest)
+        master_path = project / "master.mp4"
         _write_master(master_path, checkpoints, segments, vae, audio_vae, width, height, crf)
         last_latent, _ = _load_segment(checkpoints[-1])
         last_latent = _cpu_latent(last_latent)
         manifest["status"] = "complete"
         manifest["master"] = master_path.name
-        _atomic_json(project / "manifest.json", manifest)
+        _atomic_json(manifest_path, manifest)
+        relative_folder = os.path.relpath(project, output_root)
         video = InputImpl.VideoFromFile(str(master_path))
         preview = ui.PreviewVideo([
             ui.SavedResult(master_path.name, relative_folder, io.FolderType.output)

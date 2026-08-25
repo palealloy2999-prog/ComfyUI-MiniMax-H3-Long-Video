@@ -8,7 +8,19 @@ Experimental long-form MiniMax H3 reference-video generation for current ComfyUI
 
 `MiniMax H3 Long Reference Sampler` combines the reference inputs from ComfyUI's built-in `MiniMax H3 Reference to Video` node with custom sampler inputs. It splits a long 24 fps timeline into model-sized AV latent segments, uses 22 or 39 frames of sampled video and audio latent as a frame-zero guide for the next segment, saves every segment to SSD, and decodes the selected checkpoints to one MP4 without retaining the full decoded movie in RAM. Guided frames are generated at the head of each continuation segment and removed from the master video.
 
-Prompts may use either an `integrated_multimodal_description:` block or a plain `[Shot 1] ... [Shot N] At MM:SS.mmm, ...` timeline. Each shot is assigned once, to the segment containing its global start timestamp; a shot already started in the previous segment is not copied into the next one. Timestamps are rebased to the segment-local timeline while text before the first shot and recognized camera-editing requirements after the final shot remain global instructions. A segment with no new shot receives only a neutral instruction to continue from its preceding AV context without replaying earlier action.
+Prompts may use either an `integrated_multimodal_description:` block or a plain `[Shot 1] ... [Shot N] At MM:SS.mmm, ...` timeline. Each shot is assigned once, to the segment containing its global start timestamp; a shot already started in the previous segment is not copied into the next one. Timestamps are rebased to the segment-local timeline. Text before the first Shot is passed to every segment.
+
+Place instructions that must apply to every segment after the final Shot under a standalone `[Global Instructions]` line. The marker and everything after it remain common, including when they are inside `integrated_multimodal_description:`. Labels such as `Character-consistency requirement:` have no special meaning by themselves; without the marker, text after the final Shot remains part of that Shot. Use the marker exactly once and do not place it inside a Shot action.
+
+```text
+[Shot 1] Begin running.
+[Shot 2] At 00:05.000, jump over the barrier.
+
+[Global Instructions]
+Preserve the same character identity, outfit, and continuous music across every segment.
+```
+
+A segment with no new shot receives only a neutral instruction to continue from its preceding AV context without replaying earlier action.
 
 > **Shot markers are required for intentional long-form progression.** A fully timestamped Shot timeline gives the most precise control. If every Shot omits its timestamp, the node distributes the Shots evenly across the segment count calculated from `length` and `max_raw_frames`, then assigns local timestamps automatically. Timestamped and untimed Shots may be mixed: explicit timestamps remain fixed, while untimed Shots are spaced evenly between the surrounding timestamped Shots or between the final timestamp and the end of the video. Without Shot markers, the node cannot divide actions by meaning and repeats the full prompt for every segment. This can cause each segment to restart or repeat the same action.
 
@@ -17,6 +29,12 @@ Every segment uses the same `noise_seed`. Its local timeline prompt and precedin
 `max_raw_frames` controls the VRAM-sensitive total generated length of each segment, including its removable guide, on MiniMax H3's `17k+5` frame grid. At 24 fps, useful values are 73 (~3.0 seconds), 90 (3.75 seconds), 107 (~4.5 seconds), and 124 (~5.2 seconds). The default is 124.
 
 The exact prompt sent to each sampling pass is saved beside the latent checkpoints as `prompts/segment_NNNN.txt`. The manifest records the delivered timeline and prompt window for each segment.
+
+An installable Agent Skill for writing prompts in this node's format is included at [`skills/minimax-h3-long-video-prompt-writing`](skills/minimax-h3-long-video-prompt-writing). It is an agent-side writing aid, not a ComfyUI node. From the repository root, compatible agents can install it with:
+
+```bash
+npx skills add . --skill minimax-h3-long-video-prompt-writing
+```
 
 An optional `initial_latent` is context only. Its tail guides the removable head of this node's first generated segment, but its frames are not included in the output and this node's prompt timeline begins again at 0 seconds.
 
@@ -31,7 +49,7 @@ An optional `initial_latent` is context only. Its tail guides the removable head
 
 Patterns such as `%date:yyyy-MM-dd%` and `%Node name.widget_name%` are expanded by the node. `Node name` must uniquely match the referenced node's title or type, so giving a seed node the title `seed` makes `h3_long_video/%seed.seed%/` resolve from its `seed` input. With `resume` disabled, an existing non-empty bundle is not overwritten: `_2`, `_3`, and so on are appended to its folder name. With `resume` enabled, the exact expanded folder is opened so its checkpoints can be reused.
 
-Enable `resume` to reuse compatible checkpoints. Keep `reroll_from_segment` at `-1` to continue from the first missing or incompatible segment, or set it to `N` to keep segments before `N` and regenerate segment `N` and everything after it.
+Enable `resume` to reuse compatible checkpoints. Keep `reroll_from_segment` at `-1` to continue from the first missing or incompatible segment, or set it to `N` to keep segments before `N` and regenerate segment `N` and everything after it. Compatibility includes the local prompt, seed and frame plan, upstream model/CLIP/sampler/sigma settings, reference inputs, `initial_latent`, and predecessor lineage. Checkpoints from older manifest schemas are regenerated.
 
 Changing an earlier prompt window requires rerolling from that segment or earlier because every later segment inherits its predecessor's latent tail.
 
@@ -62,7 +80,9 @@ For diffusion-based latent enlargement, use the four loop support nodes with Eas
 
 Connect `MiniMax H3 Long Reference Sampler.master_path` directly to `MiniMax H3 Long Upscale Prepare.master_path`. A bundle folder or its `manifest.json` is also accepted when entered manually.
 
-The final bundle path starts at `upscale/` under the source bundle. For example, `h3_long_video/123/master.mp4` produces `h3_long_video/123/upscale/master.mp4`. If that folder already exists, a new `upscale_2/`, `upscale_3/`, and so on is created instead of overwriting it. Segment Save uses an internal ComfyUI temporary folder while the loop is running; after Assemble moves the processed checkpoints and prompts into the selected output bundle, the temporary job folder is removed.
+The final bundle path starts at `upscale/` under the source bundle. For example, `h3_long_video/123/master.mp4` produces `h3_long_video/123/upscale/master.mp4`. If that folder already exists, a new `upscale_2/`, `upscale_3/`, and so on is created instead of overwriting it. Prepare allocates this persistent bundle before the loop, and Segment Save writes processed checkpoints and prompts directly into it. If processing stops, completed segments and a `processing` manifest remain under the output folder. Assemble validates the saved files and creates the MP4 without moving them through a temporary job folder.
+
+To continue an interrupted upscale, enable Prepare's advanced `resume` input and keep the same Ultimate Upscale workflow settings. Prepare reopens the newest incomplete bundle for that source, validates the source checkpoints and saved outputs, and sends only missing segments through the loop. If every segment was already saved but MP4 decoding failed, the final segment is processed once more so Assemble receives a fresh progress value and can retry the decode.
 
 The loop wiring is `Prepare -> For Loop Start -> Segment Load -> MiniMax H3 Reference to Video -> MMH3 Ultimate Upscale -> Segment Save -> For Loop End -> Assemble`. `segment_count` drives the loop and EasyUse's `index` drives `segment_index`. The loader emits exactly one source latent plus its segment-local prompt, seed, source width and height, and raw frame count. The save node writes the processed latent to SSD immediately; only a small progress value is carried through Loop End. Assemble starts after the final iteration, decodes the saved checkpoints one at a time, removes the recorded continuation overlap, and writes one MP4.
 

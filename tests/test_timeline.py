@@ -68,6 +68,52 @@ class TimelineTests(unittest.TestCase):
         self.assertIn("overall_soundscape:", sliced)
         self.assertIn("non_diegetic_music:", sliced)
 
+    def test_integrated_prompt_preserves_common_intro_and_global_instructions(self):
+        prompt = """integrated_multimodal_description: Preserve the exact character identity.
+Use a continuous bright electronic-pop song.
+
+[Shot 1] Start running.
+[Shot 2] At 00:05.000, jump over a barrier.
+Landing requirement: Bend only during this landing.
+
+[Global Instructions]
+Character-consistency requirement: Keep the same face and outfit.
+Camera-motion requirement: Keep the camera moving.
+
+overall_soundscape: Footsteps continue.
+"""
+        first = slice_prompt(prompt, 0.0, 5.0)
+        second = slice_prompt(prompt, 5.0, 10.0, 22 / 24)
+        for sliced in (first, second):
+            self.assertIn("Preserve the exact character identity", sliced)
+            self.assertIn("continuous bright electronic-pop song", sliced)
+            self.assertIn("Character-consistency requirement", sliced)
+            self.assertIn("Camera-motion requirement", sliced)
+            self.assertIn("overall_soundscape: Footsteps continue", sliced)
+        self.assertIn("Start running", first)
+        self.assertNotIn("Start running", second)
+        self.assertNotIn("Landing requirement", first)
+        self.assertIn("jump over a barrier", second)
+        self.assertIn("Landing requirement", second)
+
+    def test_global_instructions_marker_must_be_unique_and_after_final_shot(self):
+        before = """integrated_multimodal_description:
+[Global Instructions]
+Keep the same character.
+[Shot 1] Start.
+"""
+        duplicate = """integrated_multimodal_description:
+[Shot 1] Start.
+[Global Instructions]
+Keep the same character.
+[Global Instructions]
+Keep the same music.
+"""
+        with self.assertRaisesRegex(ValueError, "after the final Shot"):
+            slice_prompt(before, 0.0, 5.0)
+        with self.assertRaisesRegex(ValueError, "at most one"):
+            slice_prompt(duplicate, 0.0, 5.0)
+
     def test_freeform_prompt_still_rebases_timestamps(self):
         sliced = slice_prompt("At 00:03.000, she turns.", 2.0, 5.0)
         self.assertIn("At 00:01.000", sliced)
@@ -80,6 +126,7 @@ class TimelineTests(unittest.TestCase):
 [Shot 3] At 00:06.900, HARD CUT to a side tracking shot.
 [Shot 4] At 00:08.150, enter bullet time.
 
+[Global Instructions]
 Camera-cut requirement: Each insert must be a real cut.
 Action-editing rhythm: chase -> insert -> chase.
 """

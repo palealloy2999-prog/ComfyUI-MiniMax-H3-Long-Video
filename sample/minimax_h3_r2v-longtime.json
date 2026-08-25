@@ -1,98 +1,9 @@
 {
   "id": "423b0d3f-e696-448c-a3d4-3bb74d3b8c76",
   "revision": 0,
-  "last_node_id": 466,
-  "last_link_id": 1002,
+  "last_node_id": 508,
+  "last_link_id": 1109,
   "nodes": [
-    {
-      "id": 411,
-      "type": "SolAttnPatch",
-      "pos": [
-        -90,
-        5980
-      ],
-      "size": [
-        270,
-        300
-      ],
-      "flags": {},
-      "order": 21,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 848
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            847
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "SolAttnPatch"
-      },
-      "widgets_values": [
-        1.3,
-        0.2,
-        0.9,
-        4096,
-        true,
-        "exact_kv",
-        true,
-        "3d",
-        false,
-        false,
-        ""
-      ],
-      "color": "#233",
-      "bgcolor": "#355"
-    },
-    {
-      "id": 416,
-      "type": "MiniMaxH3SigmaShift",
-      "pos": [
-        -390,
-        5980
-      ],
-      "size": [
-        270,
-        90
-      ],
-      "flags": {},
-      "order": 18,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 913
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            848
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "MiniMaxH3SigmaShift"
-      },
-      "widgets_values": [
-        12,
-        3
-      ],
-      "color": "#233",
-      "bgcolor": "#355"
-    },
     {
       "id": 430,
       "type": "DiffusionModelLoaderKJ",
@@ -139,11 +50,252 @@
       "bgcolor": "#355"
     },
     {
+      "id": 446,
+      "type": "ComfyMathExpression",
+      "pos": [
+        -1270,
+        6590
+      ],
+      "size": [
+        230,
+        130
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "a",
+          "name": "values.a",
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 986
+        },
+        {
+          "label": "b",
+          "name": "values.b",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            987,
+            1080
+          ]
+        },
+        {
+          "name": "BOOL",
+          "type": "BOOLEAN",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyMathExpression"
+      },
+      "widgets_values": [
+        "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 459,
+      "type": "ComfyMathExpression",
+      "pos": [
+        -1270,
+        6950
+      ],
+      "size": [
+        230,
+        130
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "a",
+          "name": "values.a",
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 965
+        },
+        {
+          "label": "b",
+          "name": "values.b",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            970,
+            1081
+          ]
+        },
+        {
+          "name": "BOOL",
+          "type": "BOOLEAN",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyMathExpression"
+      },
+      "widgets_values": [
+        "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 464,
+      "type": "Note",
+      "pos": [
+        -1270,
+        6990
+      ],
+      "size": [
+        260,
+        160
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "動画を指定秒数に分割して生成します\n最大15\n60秒の動画を生成する際に15であれば4分割\n10であれば6分割して生成します"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 117,
+      "type": "MarkdownNote",
+      "pos": [
+        -1790,
+        5930
+      ],
+      "size": [
+        440,
+        740
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note: Model Links",
+      "properties": {},
+      "widgets_values": [
+        "## Model Links\n[🤗 Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)\n\n**vae**\n\n- [minimax_h3_video_vae_fp16.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors)\n- [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n\n**diffusion_models**\n\n- [minimax_h3_ref2va_pruned_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors)\n\n**text_encoders**\n\n- [qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors)\n\n\n## Model Storage Location\n\n```\n📂 ComfyUI/\n├── 📂 models/\n│   ├── 📂 vae/\n│   │   ├── minimax_h3_video_vae_fp16.safetensors\n│   │   └── minimax_h3_audio_vae_fp32.safetensors\n│   ├── 📂 diffusion_models/\n│   │   └── minimax_h3_ref2va_pruned_int8_convrot.safetensors\n│   └── 📂 text_encoders/\n│       └── qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\n```\n\n## Report Issue\n\nNote: Please update ComfyUI first ([guide](https://docs.comfy.org/installation/update_comfyui)) and prepare required models. Desktop/Cloud updates follow stable releases, so some nightly-supported models may not be available yet.\n\n- Cannot run / runtime errors: [ComfyUI/issues](https://github.com/comfyanonymous/ComfyUI/issues)\n- UI / frontend issues: [ComfyUI_frontend/issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues)\n- Workflow issues: [workflow_templates/issues](https://github.com/Comfy-Org/workflow_templates/issues)\n"
+      ],
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 223,
+      "type": "PrimitiveFloat",
+      "pos": [
+        -1270,
+        6640
+      ],
+      "size": [
+        260,
+        70
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": []
+        }
+      ],
+      "title": "Float (UpScale)",
+      "properties": {
+        "Node name for S&R": "PrimitiveFloat"
+      },
+      "widgets_values": [
+        1.5
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 412,
+      "type": "CLIPLoader",
+      "pos": [
+        -950,
+        6220
+      ],
+      "size": [
+        530,
+        130
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1071
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "models": [
+          {
+            "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+            "directory": "text_encoders"
+          }
+        ]
+      },
+      "widgets_values": [
+        "minimax\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
       "id": 445,
       "type": "KSamplerSelect",
       "pos": [
-        650,
-        6260
+        1250,
+        6250
       ],
       "size": [
         230,
@@ -152,7 +304,7 @@
       "flags": {
         "collapsed": false
       },
-      "order": 1,
+      "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -160,7 +312,7 @@
           "name": "SAMPLER",
           "type": "SAMPLER",
           "links": [
-            943
+            1074
           ]
         }
       ],
@@ -170,143 +322,68 @@
       "widgets_values": [
         "res_multistep"
       ],
-      "color": "#223",
-      "bgcolor": "#335"
+      "color": "#233",
+      "bgcolor": "#355"
     },
     {
-      "id": 326,
-      "type": "LoadImage",
+      "id": 416,
+      "type": "MiniMaxH3SigmaShift",
       "pos": [
-        -630,
-        7270
-      ],
-      "size": [
-        320,
-        500
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 4,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            974
-          ]
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "7426__00001_.png",
-        "image"
-      ]
-    },
-    {
-      "id": 465,
-      "type": "LoadImage",
-      "pos": [
-        -290,
-        7280
-      ],
-      "size": [
-        320,
-        500
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 4,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            975
-          ]
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "7457__00001_.png",
-        "image"
-      ]
-    },
-    {
-      "id": 383,
-      "type": "BasicScheduler",
-      "pos": [
-        -950,
-        6710
-      ],
-      "size": [
-        380,
-        130
-      ],
-      "flags": {},
-      "order": 23,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 990
-        }
-      ],
-      "outputs": [
-        {
-          "name": "SIGMAS",
-          "type": "SIGMAS",
-          "links": [
-            994
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "BasicScheduler"
-      },
-      "widgets_values": [
-        "simple",
-        20,
-        1
-      ],
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
-      "id": 413,
-      "type": "SpectrumApplyMiniMaxH3",
-      "pos": [
-        220,
+        -390,
         5980
       ],
       "size": [
-        290,
-        420
+        270,
+        90
       ],
       "flags": {},
-      "order": 22,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 847
+          "link": 913
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1068
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SigmaShift"
+      },
+      "widgets_values": [
+        12,
+        3
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 497,
+      "type": "MiniMaxChunkFeedForward",
+      "pos": [
+        -390,
+        6120
+      ],
+      "size": [
+        270,
+        90
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1068
         }
       ],
       "outputs": [
@@ -314,49 +391,33 @@
           "name": "model",
           "type": "MODEL",
           "links": [
-            990,
-            991,
-            995
+            1069
           ]
         }
       ],
       "properties": {
-        "Node name for S&R": "SpectrumApplyMiniMaxH3"
+        "Node name for S&R": "MiniMaxChunkFeedForward"
       },
       "widgets_values": [
-        true,
-        0.5,
-        4,
-        0.1,
         2,
-        0.75,
-        5,
-        1,
-        8,
-        false,
-        "system_ram",
-        true,
-        false,
-        false,
-        true,
-        0
+        4096
       ],
-      "color": "#223",
-      "bgcolor": "#335"
+      "color": "#233",
+      "bgcolor": "#355"
     },
     {
       "id": 444,
       "type": "Power Puter (rgthree)",
       "pos": [
-        580,
-        5990
+        1180,
+        5980
       ],
       "size": [
         310,
         220
       ],
       "flags": {},
-      "order": 26,
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
@@ -397,7 +458,7 @@
           "shape": 3,
           "type": "*",
           "links": [
-            944
+            1075
           ]
         },
         {
@@ -423,549 +484,18 @@
       "bgcolor": "#355"
     },
     {
-      "id": 198,
-      "type": "PrimitiveBoolean",
-      "pos": [
-        -1270,
-        6120
-      ],
-      "size": [
-        260,
-        60
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "BOOLEAN",
-          "type": "BOOLEAN",
-          "links": [
-            998
-          ]
-        }
-      ],
-      "title": "Enable Turbo LoRA?",
-      "properties": {
-        "Node name for S&R": "PrimitiveBoolean"
-      },
-      "widgets_values": [
-        true
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 412,
-      "type": "CLIPLoader",
-      "pos": [
-        -950,
-        6220
-      ],
-      "size": [
-        530,
-        130
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            999
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPLoader",
-        "models": [
-          {
-            "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
-            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
-            "directory": "text_encoders"
-          }
-        ]
-      },
-      "widgets_values": [
-        "minimax\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
-        "minimax",
-        "default"
-      ],
-      "color": "#233",
-      "bgcolor": "#355"
-    },
-    {
-      "id": 399,
-      "type": "VAELoader",
-      "pos": [
-        -950,
-        6410
-      ],
-      "size": [
-        530,
-        70
-      ],
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            1000
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAELoader",
-        "models": [
-          {
-            "name": "minimax_h3_video_vae_fp16.safetensors",
-            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors",
-            "directory": "vae"
-          }
-        ]
-      },
-      "widgets_values": [
-        "minimax\\minimax_h3_video_vae_fp16.safetensors"
-      ],
-      "color": "#233",
-      "bgcolor": "#355"
-    },
-    {
-      "id": 400,
-      "type": "VAELoader",
-      "pos": [
-        -950,
-        6540
-      ],
-      "size": [
-        530,
-        70
-      ],
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            1001
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAELoader",
-        "models": [
-          {
-            "name": "minimax_h3_audio_vae_fp32.safetensors",
-            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
-            "directory": "vae"
-          }
-        ]
-      },
-      "widgets_values": [
-        "minimax\\minimax_h3_audio_vae_fp32.safetensors"
-      ],
-      "color": "#233",
-      "bgcolor": "#355"
-    },
-    {
-      "id": 220,
-      "type": "PrimitiveFloat",
-      "pos": [
-        -1270,
-        6470
-      ],
-      "size": [
-        260,
-        70
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "FLOAT",
-          "type": "FLOAT",
-          "links": [
-            986
-          ]
-        }
-      ],
-      "title": "Float (Duration)",
-      "properties": {
-        "Node name for S&R": "PrimitiveFloat"
-      },
-      "widgets_values": [
-        45
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 446,
-      "type": "ComfyMathExpression",
-      "pos": [
-        -1270,
-        6590
-      ],
-      "size": [
-        230,
-        130
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 19,
-      "mode": 0,
-      "inputs": [
-        {
-          "label": "a",
-          "name": "values.a",
-          "type": "FLOAT,INT,BOOLEAN",
-          "link": 986
-        },
-        {
-          "label": "b",
-          "name": "values.b",
-          "shape": 7,
-          "type": "FLOAT,INT,BOOLEAN",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "FLOAT",
-          "type": "FLOAT",
-          "links": []
-        },
-        {
-          "name": "INT",
-          "type": "INT",
-          "links": [
-            987
-          ]
-        },
-        {
-          "name": "BOOL",
-          "type": "BOOLEAN",
-          "links": []
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ComfyMathExpression"
-      },
-      "widgets_values": [
-        "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 223,
-      "type": "PrimitiveFloat",
-      "pos": [
-        -1270,
-        6640
-      ],
-      "size": [
-        260,
-        70
-      ],
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "FLOAT",
-          "type": "FLOAT",
-          "links": []
-        }
-      ],
-      "title": "Float (UpScale)",
-      "properties": {
-        "Node name for S&R": "PrimitiveFloat"
-      },
-      "widgets_values": [
-        1.5
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 459,
-      "type": "ComfyMathExpression",
-      "pos": [
-        -1270,
-        6950
-      ],
-      "size": [
-        230,
-        130
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 20,
-      "mode": 0,
-      "inputs": [
-        {
-          "label": "a",
-          "name": "values.a",
-          "type": "FLOAT,INT,BOOLEAN",
-          "link": 965
-        },
-        {
-          "label": "b",
-          "name": "values.b",
-          "shape": 7,
-          "type": "FLOAT,INT,BOOLEAN",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "FLOAT",
-          "type": "FLOAT",
-          "links": []
-        },
-        {
-          "name": "INT",
-          "type": "INT",
-          "links": [
-            970
-          ]
-        },
-        {
-          "name": "BOOL",
-          "type": "BOOLEAN",
-          "links": []
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ComfyMathExpression"
-      },
-      "widgets_values": [
-        "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 464,
-      "type": "Note",
-      "pos": [
-        -1270,
-        6990
-      ],
-      "size": [
-        260,
-        160
-      ],
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "動画を指定秒数に分割して生成します\n最大15\n60秒の動画を生成する際に15であれば4分割\n10であれば6分割して生成します"
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 460,
-      "type": "PrimitiveInt",
-      "pos": [
-        -1270,
-        6810
-      ],
-      "size": [
-        260,
-        90
-      ],
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "INT",
-          "type": "INT",
-          "links": [
-            965
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PrimitiveInt"
-      },
-      "widgets_values": [
-        15,
-        "fixed"
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 291,
-      "type": "MiniMaxH3PreviewOverride",
-      "pos": [
-        950,
-        5950
-      ],
-      "size": [
-        500,
-        750
-      ],
-      "flags": {},
-      "order": 27,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 957
-        },
-        {
-          "label": "Tiny VAE",
-          "name": "tiny_vae",
-          "shape": 7,
-          "type": "VAE",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            958
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "MiniMaxH3PreviewOverride"
-      },
-      "widgets_values": [
-        1016,
-        80,
-        true,
-        16,
-        3,
-        "taeh3_decoder.safetensors",
-        ""
-      ]
-    },
-    {
-      "id": 199,
-      "type": "CustomResolutionSelector",
-      "pos": [
-        -1270,
-        6230
-      ],
-      "size": [
-        260,
-        180
-      ],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "width",
-          "type": "INT",
-          "links": [
-            988
-          ]
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "links": [
-            989
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CustomResolutionSelector"
-      },
-      "widgets_values": [
-        "16:9 landscape",
-        "0.2",
-        32,
-        ""
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 429,
-      "type": "LoraLoaderModelOnly",
-      "pos": [
-        -950,
-        6960
-      ],
-      "size": [
-        380,
-        180
-      ],
-      "flags": {},
-      "order": 24,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 991
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            849,
-            996
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoraLoaderModelOnly"
-      },
-      "widgets_values": [
-        "miniMaxH3\\minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors",
-        0.8
-      ],
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
       "id": 431,
       "type": "BasicScheduler",
       "pos": [
-        -530,
-        6960
+        740,
+        6210
       ],
       "size": [
         370,
         130
       ],
       "flags": {},
-      "order": 25,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
@@ -995,184 +525,359 @@
       "bgcolor": "#335"
     },
     {
-      "id": 117,
-      "type": "MarkdownNote",
+      "id": 383,
+      "type": "BasicScheduler",
       "pos": [
-        -1790,
-        5930
+        320,
+        5980
       ],
       "size": [
-        440,
-        740
+        380,
+        130
       ],
       "flags": {},
-      "order": 13,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "title": "Note: Model Links",
-      "properties": {},
-      "widgets_values": [
-        "## Model Links\n[🤗 Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)\n\n**vae**\n\n- [minimax_h3_video_vae_fp16.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors)\n- [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n\n**diffusion_models**\n\n- [minimax_h3_ref2va_pruned_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors)\n\n**text_encoders**\n\n- [qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors)\n\n\n## Model Storage Location\n\n```\n📂 ComfyUI/\n├── 📂 models/\n│   ├── 📂 vae/\n│   │   ├── minimax_h3_video_vae_fp16.safetensors\n│   │   └── minimax_h3_audio_vae_fp32.safetensors\n│   ├── 📂 diffusion_models/\n│   │   └── minimax_h3_ref2va_pruned_int8_convrot.safetensors\n│   └── 📂 text_encoders/\n│       └── qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\n```\n\n## Report Issue\n\nNote: Please update ComfyUI first ([guide](https://docs.comfy.org/installation/update_comfyui)) and prepare required models. Desktop/Cloud updates follow stable releases, so some nightly-supported models may not be available yet.\n\n- Cannot run / runtime errors: [ComfyUI/issues](https://github.com/comfyanonymous/ComfyUI/issues)\n- UI / frontend issues: [ComfyUI_frontend/issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues)\n- Workflow issues: [workflow_templates/issues](https://github.com/Comfy-Org/workflow_templates/issues)\n"
-      ],
-      "color": "#222",
-      "bgcolor": "#000"
-    },
-    {
-      "id": 137,
-      "type": "LoadImage",
-      "pos": [
-        -1270,
-        7270
-      ],
-      "size": [
-        290,
-        510
-      ],
-      "flags": {},
-      "order": 14,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            972
-          ]
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "pasted/image (510).png",
-        "image"
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 139,
-      "type": "LoadImage",
-      "pos": [
-        -950,
-        7270
-      ],
-      "size": [
-        290,
-        510
-      ],
-      "flags": {},
-      "order": 15,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            973
-          ]
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "pasted/image (511).png",
-        "image"
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 466,
-      "type": "PrimitiveStringMultiline",
-      "pos": [
-        90,
-        6840
-      ],
-      "size": [
-        1330,
-        950
-      ],
-      "flags": {},
-      "order": 16,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "STRING",
-          "type": "STRING",
-          "links": [
-            1002
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PrimitiveStringMultiline"
-      },
-      "widgets_values": [
-        "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: A 45-second anime-style music video featuring a cute girl simply walking through a stylized city in a charming, playful, slightly silly way. Use <Picture 1> as the sole authoritative reference for the girl’s identity, face, hairstyle, outfit, silhouette, proportions, and overall visual style. Use <Picture 2> as the authoritative reference for the city background style, side-view street composition, simplified building shapes, signs, roads, sidewalks, traffic lights, trees, and clean graphic urban layout.\n\nPreserve the exact girl from <Picture 1> throughout the entire video. Do not redesign her outfit, face, hairstyle, body proportions, or age impression. Preserve the same anime-style rendering and the same visual charm. Preserve the general graphic city design language of <Picture 2> throughout the video.\n\nThe core visual concept is extremely simple and rhythmic: the girl remains near the center of the frame in side view, continuously walking toward the right side of the screen, while the city background scrolls horizontally behind her. The city background is stylized and graphic rather than realistic. The overall feeling is cute, light, catchy, and slightly silly.\n\nThe lyrics are intentionally simple, cheerful, and a little foolish in a lovable way, about ordinary things such as tasty food, the blue sky, soft wind, and small everyday happiness. The song should feel catchy and memorable even though the words are trivial.\n\nThe visual structure should remain clean and readable. The character stays central. The background scrolls. The color palette of the background changes in sync with the lyrics and music. Occasionally the video cuts in to close-ups of the girl’s face before returning to the side-view walking composition.\n\nUse rhythmic lyric-motion typography. Important words and short phrases from the lyrics appear on screen as animated graphic text integrated into the music video. The text should feel stylish, playful, and synchronized with the beat, rather than functioning like ordinary subtitles.\n\n[Shot 1] The video opens with the girl from <Picture 1> already walking in side view toward the right. She remains near the center of the frame. The camera is a clean side-view medium full-body shot. The city background from <Picture 2> scrolls smoothly from right to left behind her, creating the feeling that she is steadily walking through town.\n\nHer walking motion is soft, natural, and rhythmic: gentle arm swing, small up-and-down body motion, subtle hair bounce, and slight movement in the hem of her skirt. Her expression is calm, cute, and slightly absent-minded, as if she is happily singing nonsense thoughts to herself.\n\nThe initial background palette is bright and clean, based on soft blue-gray, white, and muted urban tones. The first lyric phrase begins immediately:\n<d>[Japanese]\nごはんがおいしい\nきょうもおいしい\n</d>\n\nOn-screen lyric keywords appear in large playful text:\n“ごはん”\n“おいしい”\n\nThe word “ごはん” pops in with a soft bounce near the upper area of the frame. “おいしい” appears larger and warmer in color, timed to the beat.\n\n[Shot 2] Continue the side-view walking composition. Keep the girl centered while the stylized city scrolls behind her. The background color shifts gently toward warmer cream, light orange, and soft pink accents, matching the happy food-related lyrics.\n\nShe keeps walking with a tiny smile, looking forward. Occasionally her eyes drift slightly upward or ahead, but she remains relaxed and steady.\n\nThe next lyric lines begin:\n<d>[Japanese]\nパンもふわふわ\nおにぎり まるい\n</d>\n\nAnimated lyric text appears in short motion-graphic bursts:\n“ふわふわ” stretches softly and floats.\n“まるい” appears as rounded chunky typography and lightly bounces.\n\n[Shot 3] Brief face cut-in. The camera cuts to a chest-up or close-up shot of the girl’s face from <Picture 1>, still matching the same identity exactly. She continues singing with a gentle, cute expression. Her hair moves slightly as if touched by a soft breeze. Her eyes are lively and expressive. Include natural irregular blinking and subtle gaze changes.\n\nThe background becomes simpler and more graphic during this cut-in, with only abstract color fields or simplified city shapes so the face remains the focus.\n\nThe lyric continues:\n<d>[Japanese]\nなんかいいかも\nしらんけど\n</d>\n\nThe phrase “なんかいいかも” slides in smoothly.\n“しらんけど” appears with a playful sideways wobble, slightly smaller and humorous.\n\n[Shot 4] Cut back to the side-view walking shot. The girl remains centered and continues walking toward the right. The city background resumes its horizontal scroll. The palette changes toward clear sky blue and white.\n\nThe next lyric lines begin:\n<d>[Japanese]\n空が青い\nびっくり青い\n雲がのんびり\nのびている\n</d>\n\nOn-screen lyric keywords:\n“青い” appears large in vivid blue.\n“のんびり” drifts slowly across the frame.\n“のびている” extends horizontally with the background motion.\n\nThe background itself should subtly react to the lyric theme: sky-related lyrics bring brighter blue tones and more airy visual space.\n\n[Shot 5] Continue the side-view walking composition, but briefly add a slightly closer crop on the girl from knees-up, still side view and still centered. Her walking remains the main action. She looks cute and unhurried. The background scroll speed remains consistent and smooth.\n\nThe next lyric lines:\n<d>[Japanese]\n風がやさしい\nたぶんやさしい\n前髪ふわっと\nなった気がする\n</d>\n\nLyric keywords:\n“やさしい” appears in soft rounded text with a gentle fade.\n“ふわっと” arrives with a small upward float and soft easing motion.\n\nThe color palette shifts toward pale mint, light aqua, and white.\n\n[Shot 6] Face cut-in again. Use a close-up of the girl’s face, matching <Picture 1> precisely. She sings directly with a mild, thoughtful, slightly silly sincerity. Include subtle mouth movement matching the lyrics. Her expression should feel innocent and charming.\n\nThe lyric continues:\n<d>[Japanese]\n右へ歩けば\nだいたい進む\n左に行くと\nちょっとちがう\n</d>\n\nThe word “右” appears bold and clean, sliding toward the right.\n“左” appears briefly from the opposite side.\nThe overall lyric typography should feel like playful visual jokes built from simple observations.\n\n[Shot 7] Return to the main side-view full-body walking shot. The city scroll continues. The palette now becomes brighter and poppier: lemon yellow, pale coral, and sky blue accents layered over the simple city design from <Picture 2>.\n\nThe girl keeps walking in the same direction. Keep the animation simple and loop-like but lively enough to feel musical and intentional. Her feet, arms, hair, and skirt should all move in a pleasing rhythmic cycle.\n\nThe next lyric lines:\n<d>[Japanese]\n信号ぴかぴか\nまちはすごい\nおみせがいっぱい\nたぶんたのしい\n</d>\n\nLyric keywords:\n“ぴかぴか” flickers in time with the beat.\n“すごい” appears oversized for comedic emphasis.\n“いっぱい” duplicates into several smaller copies across the frame.\n\n[Shot 8] Add a more graphic interlude while keeping the girl central and walking. The background simplifies further into flatter color blocks and strong shapes based on the city motif. The lyric typography becomes more prominent and energetic.\n\nThe lyric lines:\n<d>[Japanese]\nジュースはつめたい\nごくごくうまい\nアイスもいいよね\nわかる それな\n</d>\n\nKeywords:\n“つめたい” drops in with a cool-color effect.\n“ごくごく” pulses twice with the rhythm.\n“それな” appears in a playful stamped style.\n\nThe background color shifts toward cool cyan, pale blue, and light white.\n\n[Shot 9] Face cut-in. The girl glances slightly toward the viewer while continuing to sing. Her expression becomes a little brighter, with a soft smile. Keep the same face and proportions as <Picture 1>. Include subtle natural blinking.\n\nThe lyric continues:\n<d>[Japanese]\n夕方まだかな\nまだでもいいや\nなんでもないけど\nなんかたのしい\n</d>\n\nThe phrase “なんでもない” appears smaller and understated.\n“なんかたのしい” expands warmly in a friendly rounded font.\n\n[Shot 10] Return to the walking wide side-view. This is the visual climax of the cute walking concept. The city scrolls smoothly, the color palette changes more frequently in sync with the music, and multiple lyric keywords appear rhythmically but remain readable.\n\nThe girl continues her steady rightward walk. Her motion remains relaxed and charming rather than dramatic.\n\nFinal lyric block:\n<d>[Japanese]\nごはんがおいしい\n空が青い\nそれだけなのに\n今日はうれしい\n</d>\n\nKeywords:\n“ごはん”\n“青い”\n“うれしい”\n\nThe final line “今日はうれしい” should feel like the emotional conclusion, even though the song remains delightfully simple and silly.\n\n[Shot 11] In the final few seconds, keep the side-view walking shot but gradually simplify the background and text animation. The city colors become harmonized into a clean, bright final palette. The last keyword “うれしい” lingers briefly in a large elegant rounded font.\n\nThe girl keeps walking without stopping. Do not end with a dance pose. Let the concept remain simple until the end: she is still walking, still centered, still moving rightward through the cheerful city.\n\nAt the end, the music resolves cleanly while the scrolling background continues for a moment, then the image fades out.\n\nVisual-style requirement: Maintain the anime-style visual identity of <Picture 1> for the girl and the graphic city design language of <Picture 2> for the environment. Do not shift into photorealism, live-action, or generic 3D CGI. Keep the look clean, readable, and music-video friendly.\n\nCharacter-consistency requirement: Preserve the exact same girl from <Picture 1> throughout the whole video. No outfit changes, no hairstyle changes, no age shift, no redesign.\n\nBackground requirement: The city should remain visually based on <Picture 2>, with simplified side-view urban forms, roads, sidewalks, traffic lights, trees, buildings, and signs. The background scrolls horizontally throughout the video. Use palette changes to create variety while preserving the same overall background design language.\n\nMotion requirement: The girl should keep walking toward the right throughout almost the entire video. She remains visually central. The background moves behind her. Use only occasional close-up cut-ins for variety.\n\nLyric-motion requirement: Important lyric words and short phrases should appear as animated motion graphics integrated into the composition. Do not present them only as plain bottom subtitles. Keep them cute, readable, stylish, and synchronized to the music.\n\nFacial-animation requirement: During face cut-ins, use natural blinking, subtle gaze shifts, and gentle expression changes. The close-ups should feel lively and charming.\n\noverall_soundscape: Clean vocal-forward music video sound. Only minimal environmental presence is needed: a light suggestion of city ambience and soft footstep rhythm beneath the song. The emphasis should remain on the song and lyric timing.\n\nnon_diegetic_music: A cute, upbeat, catchy pop song with a light and cheerful arrangement. Use bright drums, bouncy bass, playful synths, and a sweet female vocal delivery. The melody should be simple and memorable. The tone should be charming, slightly silly, and emotionally light. It should feel like a fun anime music video song built around trivial but lovable observations about everyday life."
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 451,
-      "type": "MiniMaxH3LongReferenceSampler",
-      "pos": [
-        1490,
-        5950
-      ],
-      "size": [
-        1150,
-        1300
-      ],
-      "flags": {},
-      "order": 28,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 958
+          "link": 990
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            994
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        20,
+        1
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 198,
+      "type": "PrimitiveBoolean",
+      "pos": [
+        -1270,
+        6120
+      ],
+      "size": [
+        260,
+        60
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "BOOLEAN",
+          "type": "BOOLEAN",
+          "links": [
+            998
+          ]
+        }
+      ],
+      "title": "Enable Turbo LoRA?",
+      "properties": {
+        "Node name for S&R": "PrimitiveBoolean"
+      },
+      "widgets_values": [
+        true
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 400,
+      "type": "VAELoader",
+      "pos": [
+        -950,
+        6540
+      ],
+      "size": [
+        530,
+        70
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            1073
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "models": [
+          {
+            "name": "minimax_h3_audio_vae_fp32.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+            "directory": "vae"
+          }
+        ]
+      },
+      "widgets_values": [
+        "minimax\\minimax_h3_audio_vae_fp32.safetensors"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 399,
+      "type": "VAELoader",
+      "pos": [
+        -950,
+        6410
+      ],
+      "size": [
+        530,
+        70
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            1072
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "models": [
+          {
+            "name": "minimax_h3_video_vae_fp16.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors",
+            "directory": "vae"
+          }
+        ]
+      },
+      "widgets_values": [
+        "minimax\\minimax_h3_video_vae_fp16.safetensors"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 411,
+      "type": "SolAttnPatch",
+      "pos": [
+        -390,
+        6270
+      ],
+      "size": [
+        270,
+        300
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1069
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            847
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SolAttnPatch"
+      },
+      "widgets_values": [
+        1.3,
+        0.2,
+        0.9,
+        4096,
+        true,
+        "exact_kv",
+        true,
+        "3d",
+        false,
+        false,
+        ""
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 413,
+      "type": "SpectrumApplyMiniMaxH3",
+      "pos": [
+        -90,
+        5990
+      ],
+      "size": [
+        290,
+        420
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 847
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            990,
+            991,
+            995
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SpectrumApplyMiniMaxH3"
+      },
+      "widgets_values": [
+        true,
+        0.5,
+        4,
+        0.1,
+        2,
+        0.75,
+        5,
+        1,
+        8,
+        false,
+        "system_ram",
+        true,
+        false,
+        false,
+        true,
+        0
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 291,
+      "type": "MiniMaxH3PreviewOverride",
+      "pos": [
+        960,
+        6700
+      ],
+      "size": [
+        500,
+        750
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 957
+        },
+        {
+          "label": "Tiny VAE",
+          "name": "tiny_vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1070
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreviewOverride"
+      },
+      "widgets_values": [
+        1016,
+        80,
+        true,
+        16,
+        3,
+        "taeh3_decoder.safetensors",
+        ""
+      ]
+    },
+    {
+      "id": 498,
+      "type": "MiniMaxH3LongReferenceSampler",
+      "pos": [
+        1540,
+        5950
+      ],
+      "size": [
+        400,
+        1240
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1070
         },
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 999
+          "link": 1071
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 1000
+          "link": 1072
         },
         {
           "name": "audio_vae",
           "type": "VAE",
-          "link": 1001
+          "link": 1073
         },
         {
           "name": "sampler",
           "type": "SAMPLER",
-          "link": 943
+          "link": 1074
         },
         {
           "name": "sigmas",
           "type": "SIGMAS",
-          "link": 944
+          "link": 1075
         },
         {
           "name": "initial_latent",
@@ -1185,32 +890,11 @@
           "name": "ref_images.ref_image_0",
           "shape": 7,
           "type": "IMAGE",
-          "link": 972
+          "link": 1076
         },
         {
           "label": "ref_image_1",
           "name": "ref_images.ref_image_1",
-          "shape": 7,
-          "type": "IMAGE",
-          "link": 973
-        },
-        {
-          "label": "ref_image_2",
-          "name": "ref_images.ref_image_2",
-          "shape": 7,
-          "type": "IMAGE",
-          "link": 974
-        },
-        {
-          "label": "ref_image_3",
-          "name": "ref_images.ref_image_3",
-          "shape": 7,
-          "type": "IMAGE",
-          "link": 975
-        },
-        {
-          "label": "ref_image_4",
-          "name": "ref_images.ref_image_4",
           "shape": 7,
           "type": "IMAGE",
           "link": null
@@ -1242,7 +926,7 @@
           "widget": {
             "name": "prompt"
           },
-          "link": 1002
+          "link": 1077
         },
         {
           "name": "width",
@@ -1250,7 +934,7 @@
           "widget": {
             "name": "width"
           },
-          "link": 988
+          "link": 1078
         },
         {
           "name": "height",
@@ -1258,7 +942,7 @@
           "widget": {
             "name": "height"
           },
-          "link": 989
+          "link": 1079
         },
         {
           "name": "length",
@@ -1266,7 +950,7 @@
           "widget": {
             "name": "length"
           },
-          "link": 987
+          "link": 1080
         },
         {
           "name": "max_raw_frames",
@@ -1274,7 +958,7 @@
           "widget": {
             "name": "max_raw_frames"
           },
-          "link": 970
+          "link": 1081
         },
         {
           "name": "noise_seed",
@@ -1282,7 +966,7 @@
           "widget": {
             "name": "noise_seed"
           },
-          "link": 962
+          "link": 1083
         }
       ],
       "outputs": [
@@ -1290,13 +974,13 @@
           "name": "video",
           "type": "VIDEO",
           "links": [
-            946
+            1084
           ]
         },
         {
           "name": "last_latent",
           "type": "LATENT",
-          "links": []
+          "links": null
         },
         {
           "name": "master_path",
@@ -1306,7 +990,7 @@
         {
           "name": "segment_count",
           "type": "INT",
-          "links": []
+          "links": null
         }
       ],
       "properties": {
@@ -1317,11 +1001,11 @@
         1344,
         768,
         720,
-        73,
-        "22",
-        20,
-        "h3_long_video/%noise_seed.value%/",
-        "h3_long_video/%noise_seed.value%/video_",
+        124,
+        "39",
+        1018807227465365,
+        "randomize",
+        "h3_long_video/%date:yyyyMMdd%/%noise_seed.value%",
         false,
         -1,
         18,
@@ -1340,7 +1024,7 @@
         90
       ],
       "flags": {},
-      "order": 17,
+      "order": 9,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1351,7 +1035,7 @@
             "name": "noise_seed"
           },
           "links": [
-            962
+            1083
           ]
         }
       ],
@@ -1360,8 +1044,236 @@
         "Run widget replace on values": false
       },
       "widgets_values": [
-        20,
+        1018807227465365,
         "increment"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 429,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        320,
+        6210
+      ],
+      "size": [
+        380,
+        180
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 991
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            849,
+            996
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderModelOnly"
+      },
+      "widgets_values": [
+        "miniMaxH3\\minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors",
+        0.8
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 137,
+      "type": "LoadImage",
+      "pos": [
+        -1270,
+        7300
+      ],
+      "size": [
+        290,
+        510
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1076
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "2987__00001_.png",
+        "image"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 199,
+      "type": "CustomResolutionSelector",
+      "pos": [
+        -1270,
+        6230
+      ],
+      "size": [
+        260,
+        180
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            988,
+            1078
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            989,
+            1079
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CustomResolutionSelector"
+      },
+      "widgets_values": [
+        "5:8 portrait",
+        "0.4",
+        32,
+        ""
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 220,
+      "type": "PrimitiveFloat",
+      "pos": [
+        -1270,
+        6470
+      ],
+      "size": [
+        260,
+        70
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": [
+            986
+          ]
+        }
+      ],
+      "title": "Float (Duration)",
+      "properties": {
+        "Node name for S&R": "PrimitiveFloat"
+      },
+      "widgets_values": [
+        10
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 460,
+      "type": "PrimitiveInt",
+      "pos": [
+        -1270,
+        6810
+      ],
+      "size": [
+        260,
+        90
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            965
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveInt"
+      },
+      "widgets_values": [
+        3,
+        "fixed"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 466,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        -630,
+        6690
+      ],
+      "size": [
+        1540,
+        1030
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            1002,
+            1077
+          ]
+        }
+      ],
+      "title": "User Prompt",
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": [
+        "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: A 60-second bright, transparent, energetic anime-style digital-pop music video with no singing and no spoken vocals. Use <Picture 1> as the sole authoritative reference for the girl character. Preserve the exact same character identity, face, hairstyle, outfit, accessories, body proportions, and visual style from <Picture 1> throughout every shot. Do not redesign, re-costume, simplify, recolor, or reinterpret her.\n\nThe video takes place inside a huge abstract digital motion-graphics world rather than a realistic street or conventional stage. The environment is constantly evolving and filled with luminous geometric animation: expanding circles, concentric rings, triangles, hexagons, polygons, diagonal grids, floating squares, transparent panels, dot matrices, node-link networks, waveform shapes, binary digits, ribbon-like light trails, glowing lines, pixel fragments, rainbow refractions, sparkles, particle clouds, and digital shockwaves.\n\nThe girl remains the visual focus but is never locked into a static frontal composition. She performs a continuous light pop-dance performance mixed with weightless floating motion: rhythmic steps, turns, small jumps, spins, arm sweeps, reaches, shoulder movement, playful gestures, gentle kicks, midair rotations, short hover moments, and graceful drifting through the digital space.\n\nCamera movement is highly dynamic and musical. Continuously vary viewing angle, distance, height, and orientation. Use front three-quarter views, side profiles, rear three-quarter views, high angles, low angles, overhead compositions, medium shots, full-body shots, close-ups, and occasional extreme detail cut-ins.\n\nActively use Push In, Pull Out, Pan, Tilt, Truck, Pedestal, Tracking Shot, Arc Shot, and limited Roll. Avoid keeping the camera perfectly frontal for more than a brief moment. Major camera movements should synchronize with musical beats, fills, rises, drops, and transition accents.\n\nThere is no lyric singing and no continuous subtitle text.\n\nInstead, use short kinetic typography keywords as rhythmic graphic impact elements. The words do not need to form sentences or tell a story. They behave like visual percussion.\n\nUse short words such as:\n“SIGNAL”\n“LINK”\n“PIXEL”\n“SYNC”\n“BEAT”\n“ZERO”\n“ONE”\n“CONNECT”\n“LIGHT”\n“ONLINE”\n“WORLD”\n“FLASH”\n“JUMP”\n“TURN”\n“SPARK”\n“READY?”\n“NOW”\n“GO!”\n“SEND!”\n\nTypography should appear suddenly and decisively, remain visible only briefly, then disappear, transform, fragment, stretch, rotate, pass through the camera, or dissolve into particles.\n\nDo not use karaoke-style subtitles.\nDo not display long text sentences.\nDo not place permanent text along the bottom of the frame.\n\nThe visual intensity should evolve across the full minute:\n0–15 seconds = airy digital introduction.\n15–30 seconds = rhythmic expansion.\n30–45 seconds = full digital spectacle.\n45–54 seconds = maximum visual climax.\n54–60 seconds = spacious instrumental release.\n\n[Shot 1] Begin from a high front three-quarter angle.\n\nThe girl floats gently above a field of tiny luminous points. Large transparent cyan rings slowly rotate beneath her. Thin glowing lines form loose geometric networks in the distance.\n\nThe camera slowly Pedestals Down while performing a subtle Push In.\n\nShe raises one hand toward a floating point of light.\n\nOn a clean musical accent, the word “SIGNAL” appears sharply beside her.\n\n“SIGNAL” expands once with a strong scale hit.\n\nConcentric transmission rings propagate outward from the typography.\n\nTiny light particles travel along thin network lines.\n\nMusic cue: Airy instrumental electronic pop. Soft luminous synth pads, delicate sparkling arpeggios, restrained electronic percussion, subtle buoyant bass, and wide clean harmonic space. No vocals.\n\n[Shot 2] At 00:03.500, cut to a low side three-quarter angle.\n\nThe camera performs a smooth Arc Shot around the girl while she takes two rhythmic steps and lightly rises from the implied floor.\n\nOn the beat, “LINK” appears between several glowing nodes.\n\nBright lines instantly connect the nodes.\n\nThe typography stretches briefly along the connection path, then breaks into small light particles.\n\nThe girl turns through the moving network and performs a light arm sweep.\n\nWarm yellow and peach accents begin entering the blue-and-white palette.\n\n[Shot 3] At 00:07.000, cut to an asymmetric facial close-up from a front three-quarter angle.\n\nThe camera slowly Trucks sideways.\n\nShe looks briefly toward the moving camera, blinks naturally, then glances upward.\n\nOn a sharp musical hit, “PIXEL” appears close to the lens.\n\nThe word immediately breaks into hundreds of glowing square particles.\n\nThe particles drift across her hair and face without obscuring her.\n\nThe camera Tilts Up slightly as the pixel fragments rise.\n\n[Shot 4] At 00:10.500, emerge from the pixel cloud into a very wide rear three-quarter composition.\n\nThe girl floats forward into a much larger luminous digital space.\n\nThe camera Tracks behind her and gradually Pulls Out.\n\nHuge transparent circles, distant grids, triangles, and glowing polygons extend deep into the background.\n\nOn a strong beat, “SYNC” slams into frame.\n\nSeveral geometric rings instantly rotate into alignment around the typography.\n\nThe girl performs a small midair turn as all major graphic elements briefly synchronize their movement.\n\nMusic cue: Increase rhythmic drive. Introduce clearer drums, brighter arpeggiators, more active bass, and stronger chord movement while keeping the sound transparent and uplifting.\n\n[Shot 5] At 00:15.000, begin the second 15-second section with a fast side Tracking Shot.\n\nThe girl moves laterally through the abstract world while floating slightly above the implied floor.\n\nShe performs:\nside step → small turn → arm sweep → light kick → bounce.\n\nThe camera travels parallel to her.\n\nLarge translucent shapes pass between camera and character, creating foreground parallax.\n\nOn a heavy beat, “BEAT” rapidly Pushes directly toward the lens.\n\nThe word briefly fills most of the frame before passing through the camera and disappearing.\n\n[Shot 6] At 00:18.500, cut to a low-angle front three-quarter composition.\n\nThe camera Pushes In as she floats upward.\n\nShe lifts one arm high and rotates gently.\n\nAround her, glowing “0” and “1” symbols begin appearing.\n\nOn consecutive rhythmic hits:\n“ZERO”\nthen\n“ONE”\n\nEach word appears separately.\n\nBinary digits stream behind her at different depths.\n\nHalfway through the shot, Arc the camera around her shoulder toward a side profile.\n\n[Shot 7] At 00:22.000, cut overhead.\n\nThe girl spins lightly beneath the camera inside several concentric rings.\n\nPerform a restrained Roll of approximately 20 degrees while descending toward her.\n\nOn a rhythmic fill, “CONNECT” appears large beneath her body.\n\nDozens of luminous nodes instantly connect into a geometric network radiating outward.\n\nThe network expands rapidly across the entire digital environment.\n\nAs the camera approaches her, she looks upward.\n\nCut briefly into an extreme close-up of her eyes for less than one second.\n\n[Shot 8] At 00:26.000, snap back into a rear-side medium-wide composition.\n\nThe girl takes two quick steps across an invisible surface, jumps lightly, then becomes weightless and rotates forward.\n\nOn a bright accent, “LIGHT” appears behind her.\n\nThe word blooms into an intense white-yellow glow.\n\nIt expands into a circular flash, then transforms into thousands of floating sparkling particles.\n\nUse soft cyan, yellow, pink, and white.\n\nMusic cue: Continue the same instrumental track seamlessly, now fuller and more energetic. Add stronger drums, brighter arpeggios, wider chords, active melodic synth lines, and a playful forward-driving bass groove.\n\n[Shot 9] At 00:30.000, begin the third section from an extreme-wide composition.\n\nThe girl appears small inside an enormous tunnel made of rotating rings, hexagons, lines, particles, and floating transparent panels.\n\nThe camera rapidly Pushes through the tunnel toward her.\n\nShe turns toward the approaching camera and sweeps one hand across frame.\n\nOn successive beats:\n“ONLINE”\nthen\n“WORLD”\n\n“ONLINE” flickers briefly like a digital status indicator.\n\n“WORLD” appears enormous far behind her, embedded into the deep geometry of the environment.\n\nThe camera passes through several luminous rings as it approaches.\n\nMusic cue: Enter the full energetic digital-pop section. Strong clean electronic rhythm, bright synth hooks, dense sparkling arpeggios, lively bass movement, and wide uplifting harmony.\n\n[Shot 10] At 00:33.500, cut to a fast side-profile Truck Shot.\n\nThe girl performs a compact dance phrase:\nstep → shoulder turn → hand sweep → hop → half-spin.\n\nLarge triangles and circles move rapidly across the foreground.\n\nOn a strong percussion accent, “FLASH” appears for only a fraction of a second.\n\nThe screen produces a synchronized white-cyan light burst.\n\nDo not hold the word.\n\nIt should function like a visual impact frame.\n\n[Shot 11] At 00:37.000, cut to a dramatic low-angle medium shot.\n\nThe camera performs an Arc Shot while the girl rises upward.\n\nShe swings one arm across the frame.\n\nOn the next musical hit, “JUMP” appears beneath her just as she launches upward.\n\nThe typography stretches vertically and disappears below frame.\n\nImmediately afterward, “TURN” appears as she rotates in midair.\n\n“TURN” follows a circular motion path around her and then breaks apart into curved streaks.\n\n[Shot 12] At 00:41.000, cut to a huge overhead shot.\n\nHundreds of geometric objects rotate in layered circular formations.\n\nThe girl gently drops backward through the center and rotates upright.\n\nThe camera Rolls slowly in the opposite direction from the environment.\n\nOn several quick accents, small copies of “SPARK” appear around her in different positions.\n\nEach “SPARK” creates a compact particle burst.\n\nThe bursts combine into a massive luminous spiral surrounding the girl.\n\nMusic cue: Maintain high energy and begin building toward the final climax. Add rising synth lines, stronger harmonic tension, denser arpeggios, and increasingly powerful rhythmic fills.\n\n[Shot 13] At 00:45.000, begin the final climax section from a rear three-quarter medium-wide shot.\n\nThe girl faces a huge luminous horizon made of connected lines, rings, particles, and polygon structures.\n\nShe steps forward and rises into the air.\n\nThe camera Tracks behind her, then Arcs smoothly toward her side.\n\nOn a strong rising accent, “READY?” appears in the deep background.\n\nThe word grows larger as the camera moves.\n\nIt fragments into hundreds of geometric pieces.\n\nThe environment begins accelerating.\n\nMusic cue: Begin the major final rise. Keep the full rhythm but widen the harmony and increase melodic brightness. Strong fills should prepare the viewer for the maximum visual impact around 52–54 seconds.\n\n[Shot 14] At 00:48.000, cut from far below looking upward.\n\nThe girl floats high above the camera.\n\nThousands of glowing particles rise around her against gravity.\n\nThe camera rapidly Pushes Up through the particle field.\n\nOn a sharp hit, “NOW” appears directly above her.\n\nIt remains visible for less than one second.\n\nImmediately afterward, “GO!” slams forward toward the camera while the girl accelerates through a field of expanding rings.\n\nUse aggressive parallax and strong forward motion.\n\n[Shot 15] At 00:51.000, cut to an extreme close-up of one eye for only a fraction of a second.\n\nImmediately Pull Out at high speed into a dynamic front three-quarter full-body composition.\n\nThe girl rotates, extends one hand forward, and floats toward the moving camera.\n\nThe entire digital world reaches maximum density:\nrainbow refractions,\nlarge geometric structures,\nrotating rings,\npixel clouds,\nnode networks,\nforeground streaks,\nwaveform bursts,\nglowing ribbons,\nand dense sparkling particles.\n\nAt approximately 52.5–54.0 seconds, trigger the largest typography hit in the entire video:\n\n“SEND!”\n\n“SEND!” appears enormous behind and partially around the girl.\n\nOn the strongest musical impact, the word explodes outward into:\nhundreds of geometric fragments,\nexpanding concentric rings,\nrainbow pixel particles,\nluminous node connections,\nlong glowing trails,\nwaveform shockwaves,\nand a huge digital light burst.\n\nThe girl remains clearly visible within the center of the effect.\n\nThe camera rapidly Pushes toward her hand, then instantly Pulls Out through the expanding digital explosion.\n\nMusic cue: Reach maximum instrumental intensity. Bright electronic drums, buoyant bass, wide luminous synth chords, rapid sparkling arpeggios, powerful melodic hooks, and a major synchronized impact for “SEND!”. No vocals.\n\n[Shot 16] At 00:54.000, begin the instrumental release.\n\nThe large digital explosion continues expanding, but immediately becomes softer and more spacious.\n\nCut to a distant side-rear three-quarter view.\n\nThe girl floats slowly through a clean sky-blue, white, and soft rainbow environment.\n\nReduce the density of geometric structures.\n\nThe camera gently Trucks sideways while slowly Pulling Out.\n\nTiny fragments of earlier words may drift in the far background:\n“SIGNAL”\n“LINK”\n“PIXEL”\n“SYNC”\n“LIGHT”\n\nThey are purely decorative fragments and should remain small and unobtrusive.\n\nDo not introduce any new large typography.\n\nMusic cue: Remove much of the heavy rhythm. Keep shimmering synth arpeggios, warm sustained chords, soft bass resonance, delicate high electronic tones, and a gentle melodic continuation.\n\n[Shot 17] At 00:57.000, cut to the final very wide diagonal rear-side composition.\n\nThe girl continues drifting upward and forward through an enormous open luminous space.\n\nThe camera performs a slow Pull Out with a gentle Tilt Up.\n\nSoft particles travel past the lens at several depths, creating strong but calm parallax.\n\nThe remaining geometric structures become fewer, larger, and more distant.\n\nOne thin glowing line extends from near the girl toward the bright distant horizon.\n\nShe makes one final small turn in midair and continues drifting forward.\n\nDo not return to a frontal pose.\n\nDo not stop the character.\n\nDo not display any new typography.\n\nEnd naturally while both the girl and the digital space remain in gentle motion.\n\nMusic cue: Instrumental outro only. Continue soft shimmering arpeggios, sustained harmonic pads, delicate high synth tones, and minimal rhythm. Allow the arrangement to become increasingly spacious through the final frame without a heavy final impact.\n\nCharacter-consistency requirement: <Picture 1> is the sole authoritative visual reference for the girl. Preserve the exact same character throughout every camera angle, including full-body views, side profiles, rear three-quarter views, high angles, low angles, overhead shots, and facial close-ups.\n\nPerformance requirement: Keep the girl continuously expressive and connected to the instrumental rhythm. Mix light dance phrases with weightless floating movement: steps, turns, reaches, spins, small jumps, body rotations, playful gestures, hover transitions, and graceful midair motion. Avoid repetitive idle swaying.\n\nCamera-variety requirement: Do not default to a fixed frontal camera. Regularly alternate between front three-quarter, side profile, rear three-quarter, low angle, high angle, overhead, close-up, medium, full-body, and extreme-wide compositions.\n\nCamera-motion requirement: Actively use Push In, Pull Out, Pan, Tilt, Truck, Pedestal, Tracking Shot, Arc Shot, and limited Roll. Match major camera accelerations and direction changes to musical accents.\n\nGeometric-animation requirement: Keep the digital environment continuously evolving. Change the scale, depth, rotation, density, direction, and color of circles, rings, triangles, hexagons, grids, nodes, connecting lines, binary digits, dot matrices, floating panels, ribbons, pixels, and luminous fragments.\n\nParticle requirement: Use abundant particles throughout, but vary their behavior. Include drifting dust, glittering sparks, pixel clouds, radial bursts, foreground streaks, orbiting particles, flowing streams, rising particles, and huge coordinated climax explosions.\n\nDepth requirement: Maintain strong visual depth. Place some graphic elements close to the lens, some around the character, and massive structures deep in the background. Use foreground particles and typography passing the camera to create parallax.\n\nTypography requirement: There are no lyrics and no subtitle-style text. Only short kinetic keywords are allowed. Typography acts as rhythmic visual impact and should appear suddenly, strongly, and briefly. Most words should remain visible for less than two seconds. Avoid displaying long sentences.\n\nTypography-motion requirement: Words may slam into frame, rapidly scale, rotate, pass through the lens, stretch through depth, connect to geometric nodes, explode into particles, dissolve into pixels, trigger light flashes, or transform into environmental graphics.\n\nMusic-synchronization requirement: Synchronize character gestures, dance accents, floating changes, camera Push Ins and Pull Outs, rotations, typography hits, geometric expansions, particle bursts, light flashes, and major transitions with strong beats, fills, melodic hooks, rises, breaks, and drops.\n\noverall_soundscape: Keep non-musical sound extremely minimal. The instrumental track dominates. Use only faint stylized digital shimmer, subtle transition sweeps, tiny sparkling accents, and soft electronic motion textures when useful.\n\nnon_diegetic_music: A continuous bright, transparent, uplifting electronic-pop instrumental track with sparkling synth arpeggios, buoyant bass, crisp electronic drums, wide luminous synth chords, rhythmic pulses, and energetic melodic hooks. No singing and no spoken vocals. Build from an airy opening into a colorful rhythmic middle section, then into a highly energetic digital-pop climax around 45–54 seconds. Use clear beats, fills, rises, drops, and accent hits so camera motion, dance gestures, particle bursts, geometric animation, and kinetic typography synchronize tightly to the music. After approximately 54 seconds, reduce the arrangement into a spacious instrumental outro with lighter drums, shimmering arpeggios, warm sustained chords, and soft high-frequency textures.\n"
       ],
       "color": "#232",
       "bgcolor": "#353"
@@ -1370,21 +1282,21 @@
       "id": 450,
       "type": "SaveVideo",
       "pos": [
-        2670,
-        5950
+        1980,
+        5960
       ],
       "size": [
-        890,
-        649.0434782608695
+        520,
+        160
       ],
       "flags": {},
-      "order": 29,
+      "order": 27,
       "mode": 0,
       "inputs": [
         {
           "name": "video",
           "type": "VIDEO",
-          "link": 946
+          "link": 1084
         }
       ],
       "outputs": [
@@ -1416,14 +1328,6 @@
       "MODEL"
     ],
     [
-      848,
-      416,
-      0,
-      411,
-      0,
-      "MODEL"
-    ],
-    [
       849,
       429,
       0,
@@ -1440,52 +1344,12 @@
       "MODEL"
     ],
     [
-      943,
-      445,
-      0,
-      451,
-      4,
-      "SAMPLER"
-    ],
-    [
-      944,
-      444,
-      0,
-      451,
-      5,
-      "SIGMAS"
-    ],
-    [
-      946,
-      451,
-      0,
-      450,
-      0,
-      "VIDEO"
-    ],
-    [
       957,
       444,
       1,
       291,
       0,
       "MODEL"
-    ],
-    [
-      958,
-      291,
-      0,
-      451,
-      0,
-      "MODEL"
-    ],
-    [
-      962,
-      455,
-      0,
-      451,
-      20,
-      "INT"
     ],
     [
       965,
@@ -1496,76 +1360,12 @@
       "INT"
     ],
     [
-      970,
-      459,
-      1,
-      451,
-      19,
-      "INT"
-    ],
-    [
-      972,
-      137,
-      0,
-      451,
-      7,
-      "IMAGE"
-    ],
-    [
-      973,
-      139,
-      0,
-      451,
-      8,
-      "IMAGE"
-    ],
-    [
-      974,
-      326,
-      0,
-      451,
-      9,
-      "IMAGE"
-    ],
-    [
-      975,
-      465,
-      0,
-      451,
-      10,
-      "IMAGE"
-    ],
-    [
       986,
       220,
       0,
       446,
       0,
       "FLOAT"
-    ],
-    [
-      987,
-      446,
-      1,
-      451,
-      18,
-      "INT"
-    ],
-    [
-      988,
-      199,
-      0,
-      451,
-      16,
-      "INT"
-    ],
-    [
-      989,
-      199,
-      1,
-      451,
-      17,
-      "INT"
     ],
     [
       990,
@@ -1624,36 +1424,132 @@
       "BOOLEAN"
     ],
     [
-      999,
+      1068,
+      416,
+      0,
+      497,
+      0,
+      "MODEL"
+    ],
+    [
+      1069,
+      497,
+      0,
+      411,
+      0,
+      "MODEL"
+    ],
+    [
+      1070,
+      291,
+      0,
+      498,
+      0,
+      "MODEL"
+    ],
+    [
+      1071,
       412,
       0,
-      451,
+      498,
       1,
       "CLIP"
     ],
     [
-      1000,
+      1072,
       399,
       0,
-      451,
+      498,
       2,
       "VAE"
     ],
     [
-      1001,
+      1073,
       400,
       0,
-      451,
+      498,
       3,
       "VAE"
     ],
     [
-      1002,
+      1074,
+      445,
+      0,
+      498,
+      4,
+      "SAMPLER"
+    ],
+    [
+      1075,
+      444,
+      0,
+      498,
+      5,
+      "SIGMAS"
+    ],
+    [
+      1076,
+      137,
+      0,
+      498,
+      7,
+      "IMAGE"
+    ],
+    [
+      1077,
       466,
       0,
-      451,
-      15,
+      498,
+      12,
       "STRING"
+    ],
+    [
+      1078,
+      199,
+      0,
+      498,
+      13,
+      "INT"
+    ],
+    [
+      1079,
+      199,
+      1,
+      498,
+      14,
+      "INT"
+    ],
+    [
+      1080,
+      446,
+      1,
+      498,
+      15,
+      "INT"
+    ],
+    [
+      1081,
+      459,
+      1,
+      498,
+      16,
+      "INT"
+    ],
+    [
+      1083,
+      455,
+      0,
+      498,
+      17,
+      "INT"
+    ],
+    [
+      1084,
+      498,
+      0,
+      450,
+      0,
+      "VIDEO"
     ]
   ],
   "groups": [
@@ -1675,7 +1571,7 @@
       "bounding": [
         -960,
         5910,
-        1480,
+        1170,
         710
       ],
       "color": "#8AA",
@@ -1685,8 +1581,8 @@
       "id": 2,
       "title": "Sampling",
       "bounding": [
-        570,
-        5920,
+        1170,
+        5910,
         330,
         420
       ],
@@ -1697,8 +1593,8 @@
       "id": 6,
       "title": "Turbo",
       "bounding": [
-        -960,
-        6890,
+        310,
+        6140,
         810,
         260
       ],
@@ -1709,8 +1605,8 @@
       "id": 7,
       "title": "Normal",
       "bounding": [
-        -960,
-        6640,
+        310,
+        5910,
         400,
         210
       ],
@@ -1731,14 +1627,14 @@
     },
     {
       "id": 10,
-      "title": "Group",
+      "title": "ref",
       "bounding": [
         -1280,
-        7200,
-        1320,
-        590
+        7230,
+        320,
+        600
       ],
-      "color": "#3f789e",
+      "color": "#8A8",
       "flags": {}
     }
   ],
@@ -1758,10 +1654,10 @@
       ]
     },
     "ds": {
-      "scale": 0.3450988345101691,
+      "scale": 0.345098834510187,
       "offset": [
-        2090.13638891553,
-        -5465.28743417836
+        3389.3808970977734,
+        -5206.7369699244055
       ]
     }
   },

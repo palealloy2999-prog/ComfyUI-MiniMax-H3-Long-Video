@@ -72,9 +72,8 @@ _SOUNDSCAPE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 _MUSIC = re.compile(r"non_diegetic_music\s*:\s*(.*)\Z", re.IGNORECASE | re.DOTALL)
-_GLOBAL_TAIL = re.compile(
-    r"(?m)^(?:Camera-cut requirement|Rear-drone limitation|Cut-in duration requirement|Action-editing rhythm)\s*:",
-    re.IGNORECASE,
+_GLOBAL_INSTRUCTIONS = re.compile(
+    r"(?mi)^[ \t]*\[Global Instructions\][ \t]*$",
 )
 
 
@@ -116,21 +115,29 @@ def slice_prompt(prompt, start_seconds, end_seconds, context_seconds=0.0,
                  segment_index=None, segment_count=None,
                  timeline_duration_seconds=None):
     integrated = _INTEGRATED.search(prompt)
-    global_tail = ""
     if integrated is not None:
-        body = integrated.group(1).strip()
+        content = integrated.group(1).strip()
         prefix = prompt[:integrated.start()].rstrip()
         wrapped = True
     else:
-        first_shot = _SHOT.search(prompt)
-        if first_shot is None:
-            return _fallback_prompt(prompt, start_seconds, context_seconds)
-        tail = _GLOBAL_TAIL.search(prompt, first_shot.end())
-        body_end = tail.start() if tail is not None else len(prompt)
-        body = prompt[first_shot.start():body_end].strip()
-        prefix = prompt[:first_shot.start()].rstrip()
-        global_tail = prompt[body_end:].strip()
+        content = prompt
+        prefix = ""
         wrapped = False
+
+    all_matches = list(_SHOT.finditer(content))
+    if not all_matches:
+        return _fallback_prompt(prompt, start_seconds, context_seconds)
+    first_shot = all_matches[0]
+    global_markers = list(_GLOBAL_INSTRUCTIONS.finditer(content))
+    if len(global_markers) > 1:
+        raise ValueError("H3 prompt must contain at most one [Global Instructions] marker")
+    tail = global_markers[0] if global_markers else None
+    if tail is not None and tail.start() < all_matches[-1].end():
+        raise ValueError("[Global Instructions] must appear after the final Shot")
+    body_end = tail.start() if tail is not None else len(content)
+    common_intro = content[:first_shot.start()].strip()
+    global_tail = content[body_end:].strip()
+    body = content[first_shot.start():body_end].strip()
 
     matches = list(_SHOT.finditer(body))
     if not matches:
@@ -217,14 +224,19 @@ def slice_prompt(prompt, start_seconds, end_seconds, context_seconds=0.0,
     if prefix:
         parts.append(prefix)
     timeline = " ".join(rendered)
-    parts.append("integrated_multimodal_description: " + timeline if wrapped else timeline)
     if wrapped:
+        integrated_parts = [value for value in (common_intro, timeline, global_tail) if value]
+        parts.append("integrated_multimodal_description: " + "\n\n".join(integrated_parts))
         soundscape = _SOUNDSCAPE.search(prompt)
         if soundscape is not None:
             parts.append("overall_soundscape: " + soundscape.group(1).strip())
         music = _MUSIC.search(prompt)
         if music is not None:
             parts.append("non_diegetic_music: " + music.group(1).strip())
-    elif global_tail:
-        parts.append(global_tail)
+    else:
+        if common_intro:
+            parts.append(common_intro)
+        parts.append(timeline)
+        if global_tail:
+            parts.append(global_tail)
     return "\n\n".join(parts)

@@ -48,6 +48,7 @@ class BackendTests(unittest.TestCase):
         self.assertNotIn("filename_prefix", input_ids)
         self.assertIn(long_nodes.io.Hidden.prompt, schema.hidden)
         self.assertIn(long_nodes.io.Hidden.extra_pnginfo, schema.hidden)
+        self.assertIn(long_nodes.io.Hidden.unique_id, schema.hidden)
 
         upscale_schema = MiniMaxH3LongLatentUpscale.define_schema()
         upscale_inputs = [input.id for input in upscale_schema.inputs]
@@ -60,6 +61,7 @@ class BackendTests(unittest.TestCase):
         prepare_schema = MiniMaxH3LongUpscalePrepare.define_schema()
         prepare_inputs = [input.id for input in prepare_schema.inputs]
         self.assertIn("master_path", prepare_inputs)
+        self.assertIn("resume", prepare_inputs)
         self.assertNotIn("source_path", prepare_inputs)
         self.assertNotIn("output_cache_name", prepare_inputs)
 
@@ -89,6 +91,31 @@ class BackendTests(unittest.TestCase):
                 "h3_long_video/%seed.seed%/", prompt, extra_pnginfo),
             "h3_long_video/123456789/",
         )
+
+    def test_generation_fingerprint_tracks_generation_graph_but_not_full_prompt(self):
+        graph = {
+            "1": {"class_type": "UNETLoader", "inputs": {"unet_name": "h3-a.safetensors"}},
+            "10": {
+                "class_type": "MiniMaxH3LongReferenceSampler",
+                "inputs": {
+                    "model": ["1", 0],
+                    "prompt": "first timeline",
+                    "cache_name": "first/output",
+                },
+            },
+        }
+
+        def fingerprint(value):
+            return long_nodes._generation_fingerprint(
+                value, "10", None, None, "euler", torch.tensor([1.0, 0.0]),
+                "match", None, None, None, None, None)
+
+        first = fingerprint(graph)
+        graph["10"]["inputs"]["prompt"] = "changed timeline"
+        graph["10"]["inputs"]["cache_name"] = "second/output"
+        self.assertEqual(first, fingerprint(graph))
+        graph["1"]["inputs"]["unet_name"] = "h3-b.safetensors"
+        self.assertNotEqual(first, fingerprint(graph))
 
     def test_cache_name_expands_frontend_primitive_value(self):
         extra_pnginfo = {
@@ -295,7 +322,7 @@ class BackendTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source = root / "source"
-            destination = root / "ultimate"
+            destination = source / "upscale"
             (source / "latents").mkdir(parents=True)
             (source / "prompts").mkdir()
             segments = plan_segments(80, 22, False, 73)
@@ -340,7 +367,6 @@ class BackendTests(unittest.TestCase):
 
             patches = (
                 mock.patch.object(long_nodes.folder_paths, "get_output_directory", return_value=directory),
-                mock.patch.object(long_nodes.folder_paths, "get_temp_directory", return_value=directory),
                 mock.patch.object(
                     long_nodes, "_output_paths",
                     side_effect=fake_output_paths,
@@ -355,30 +381,55 @@ class BackendTests(unittest.TestCase):
                 prepared = MiniMaxH3LongUpscalePrepare.execute(str(source))
                 job, count = prepared[0], prepared[1]
                 self.assertEqual(count, 2)
-                staging = Path(job["project"])
-                self.assertTrue(staging.is_dir())
-                progress = None
-                for index in range(count):
-                    loaded = MiniMaxH3LongSegmentLoad.execute(job, index)
-                    latent, prompt, seed, width, height, raw_frames, token = loaded
-                    self.assertEqual(prompt, "segment prompt {}".format(index))
-                    self.assertEqual(seed, 1234)
-                    self.assertEqual((width, height), (32, 32))
-                    self.assertEqual(raw_frames, segments[index].raw_frames)
-                    video, audio = latent["samples"].unbind()
-                    upscaled_video = video.repeat_interleave(2, dim=-2).repeat_interleave(2, dim=-1)
-                    upscaled = {
-                        "samples": long_nodes.comfy.nested_tensor.NestedTensor((upscaled_video, audio)),
-                    }
-                    progress = MiniMaxH3LongSegmentSave.execute(upscaled, token)[0]
+                bundle = Path(job["project"])
+                self.assertTrue(bundle.is_dir())
+                loaded = MiniMaxH3LongSegmentLoad.execute(job, 0)
+                latent, prompt, seed, width, height, raw_frames, token = loaded
+                self.assertEqual(prompt, "segment prompt 0")
+                self.assertEqual(seed, 1234)
+                self.assertEqual((width, height), (32, 32))
+                self.assertEqual(raw_frames, segments[0].raw_frames)
+                video, audio = latent["samples"].unbind()
+                upscaled_video = video.repeat_interleave(2, dim=-2).repeat_interleave(2, dim=-1)
+                invalid = {
+                    "samples": long_nodes.comfy.nested_tensor.NestedTensor((
+                        upscaled_video, audio[..., :-1],
+                    )),
+                }
+                with self.assertRaisesRegex(ValueError, "changed its audio length"):
+                    MiniMaxH3LongSegmentSave.execute(invalid, token)
+                upscaled = {
+                    "samples": long_nodes.comfy.nested_tensor.NestedTensor((upscaled_video, audio)),
+                }
+                MiniMaxH3LongSegmentSave.execute(upscaled, token)
+                self.assertTrue((destination / "latents" / "segment_0000.safetensors").is_file())
+
+                resumed = MiniMaxH3LongUpscalePrepare.execute(str(source), True)
+                resumed_job, remaining = resumed[0], resumed[1]
+                self.assertEqual(remaining, 1)
+                self.assertEqual(Path(resumed_job["project"]), bundle)
+                loaded = MiniMaxH3LongSegmentLoad.execute(resumed_job, 0)
+                latent, prompt, seed, width, height, raw_frames, token = loaded
+                self.assertEqual(token["index"], 1)
+                self.assertEqual(prompt, "segment prompt 1")
+                self.assertEqual(raw_frames, segments[1].raw_frames)
+                video, audio = latent["samples"].unbind()
+                upscaled = {
+                    "samples": long_nodes.comfy.nested_tensor.NestedTensor((
+                        video.repeat_interleave(2, dim=-2).repeat_interleave(2, dim=-1), audio,
+                    )),
+                }
+                progress = MiniMaxH3LongSegmentSave.execute(upscaled, token)[0]
+                self.assertTrue((destination / "latents" / "segment_0001.safetensors").is_file())
 
                 assembled = MiniMaxH3LongUpscaleAssemble.execute(
                     progress, VideoVAE(), AudioVAE(), 28)
                 self.assertEqual(assembled[3], 2)
                 self.assertEqual(captured, [(2, 2, 64, 64)])
-                self.assertFalse(staging.exists())
+                self.assertTrue(bundle.exists())
                 manifest = json.loads((destination / "manifest.json").read_text(encoding="utf-8"))
                 self.assertEqual(manifest["status"], "complete")
+                self.assertEqual(manifest["schema"], long_nodes.LOOP_UPSCALE_SCHEMA_VERSION)
                 self.assertTrue(all(item["status"] == "saved" for item in manifest["segments"]))
             finally:
                 for patch in reversed(patches):
@@ -435,6 +486,8 @@ class BackendTests(unittest.TestCase):
                 manifest = json.loads((project / "manifest.json").read_text(encoding="utf-8"))
                 self.assertEqual(manifest["fps"], 24)
                 self.assertEqual(manifest["latent_format"], "minimax_h3_av")
+                self.assertEqual(manifest["schema"], long_nodes.SCHEMA_VERSION)
+                self.assertIn("generation_fingerprint", manifest)
                 self.assertEqual(manifest["segments"][1]["output_start"], 345)
                 self.assertEqual(manifest["segments"][1]["output_frames"], 15)
 
@@ -444,6 +497,26 @@ class BackendTests(unittest.TestCase):
                 self.assertEqual(second[3], 2)
                 self.assertEqual(FakeSampler.calls, 2)
                 self.assertEqual(noise_seeds, [1, 1])
+
+                third = long_nodes.MiniMaxH3LongReferenceSampler.execute(
+                    None, None, VideoVAE(), AudioVAE(), "A continuous shot", 32, 32, 360,
+                    345, "22", 1, "sampler", torch.tensor([1.0, 0.5, 0.0]), "test", True, -1, 28)
+                self.assertEqual(third[3], 2)
+                self.assertEqual(FakeSampler.calls, 4)
+                self.assertEqual(noise_seeds, [1, 1, 1, 1])
+
+                manifest_before = (project / "manifest.json").read_text(encoding="utf-8")
+                prompt_before = (project / "prompts" / "segment_0000.txt").read_text(encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "current generation inputs"):
+                    long_nodes.MiniMaxH3LongReferenceSampler.execute(
+                        None, None, VideoVAE(), AudioVAE(), "A continuous shot", 32, 32, 360,
+                        345, "22", 1, "sampler", torch.tensor([1.0, 0.25, 0.0]),
+                        "test", True, 1, 28)
+                self.assertEqual(FakeSampler.calls, 4)
+                self.assertEqual(
+                    (project / "manifest.json").read_text(encoding="utf-8"), manifest_before)
+                self.assertEqual(
+                    (project / "prompts" / "segment_0000.txt").read_text(encoding="utf-8"), prompt_before)
             finally:
                 for patch in reversed(patches):
                     patch.stop()

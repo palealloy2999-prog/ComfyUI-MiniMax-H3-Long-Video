@@ -20,7 +20,17 @@
 
 > **意図した長尺進行には Shot マーカーが必要です。** すべての Shot に時刻を指定するタイムラインが最も正確です。すべてのShotで時刻が省略されている場合は、`length` と `max_raw_frames` から計算したセグメント数へ Shot を均等配分し、各セグメント内の時刻を自動で割り当てます。時刻あり・なしのShotは混在可能です。明示時刻は固定したまま、無時刻Shotを前後の明示時刻の間、または最後の明示時刻から動画終了までへ等間隔に配置します。Shot マーカー自体がない場合、ノードは動作内容を意味単位で分割できず、同じ全文を各セグメントへ渡します。その結果、各セグメントで同じ動作が最初から始まる可能性があります。
 
-各Shotは、そのグローバル開始時刻を含むセグメントに一度だけ割り当てられます。前のセグメントですでに開始したShotの文章を、次のセグメントへ重複して渡すことはありません。各Shotの時刻はセグメント内のローカル時刻へ変換されます。最初のShotより前にある共通説明と、最後のShotより後にある認識可能なカメラ編集指示は、すべてのセグメントに共通する指示として扱われます。
+各Shotは、そのグローバル開始時刻を含むセグメントに一度だけ割り当てられます。前のセグメントですでに開始したShotの文章を、次のセグメントへ重複して渡すことはありません。各Shotの時刻はセグメント内のローカル時刻へ変換されます。最初のShotより前にある共通説明は、すべてのセグメントへ渡されます。
+
+すべてのセグメントへ適用する指示は、最後のShotより後に、単独行の `[Global Instructions]` を置いて記述してください。このマーカーとそれ以降の文章は、`integrated_multimodal_description:` 内にある場合も含め、全セグメントへ渡されます。`Character-consistency requirement:` などのラベル自体には特別な意味はありません。マーカーがなければ、最後のShotより後の文章もそのShotの本文として扱われます。マーカーは1回だけ使用し、Shotの動作本文内には置かないでください。
+
+```text
+[Shot 1] 走り始める。
+[Shot 2] At 00:05.000, 障害物を飛び越える。
+
+[Global Instructions]
+すべてのセグメントで同じキャラクター、衣装、連続した音楽を維持する。
+```
 
 新しいShotが1つもないセグメントには、以前の動作を繰り返さず、直前のAVコンテキストから続きを生成するための中立的な指示だけが渡されます。
 
@@ -34,6 +44,12 @@
 - 124: 約5.2秒（デフォルト）
 
 各サンプリングで実際に使用したプロンプトは、LATENTチェックポイントと一緒に `prompts/segment_NNNN.txt` として保存されます。`manifest.json` には、各セグメントの完成動画上のタイムライン範囲とプロンプト範囲が記録されます。
+
+このノード向けのプロンプトを作成するAgent Skillを [`skills/minimax-h3-long-video-prompt-writing`](skills/minimax-h3-long-video-prompt-writing) に同梱しています。これはComfyUIノードではなく、エージェント側でプロンプト作成を補助するSkillです。対応エージェントでは、リポジトリのルートから次のようにインストールできます。
+
+```bash
+npx skills add . --skill minimax-h3-long-video-prompt-writing
+```
 
 任意入力の `initial_latent` は継続コンテキストとしてのみ使用します。その末尾が、このノードで最初に生成するセグメントの除去可能な先頭部分をガイドします。`initial_latent` 自体のフレームは出力動画に含まれず、このノードのプロンプトタイムラインは再び0秒から始まります。
 
@@ -50,7 +66,7 @@
 
 `resume` が無効で同名フォルダーがすでに存在する場合は上書きせず、フォルダー名の末尾へ `_2`、`_3` のように番号を追加します。`resume` が有効な場合は、展開後の正確なフォルダーを開き、その中のチェックポイントを再利用します。
 
-互換性のある既存チェックポイントを利用するには `resume` を有効にします。`reroll_from_segment` を `-1` のままにすると、存在しない、または互換性のない最初のセグメントから生成を再開します。`N` を指定すると、セグメント `N` より前を維持し、`N` 以降をすべて再生成します。
+互換性のある既存チェックポイントを利用するには `resume` を有効にします。`reroll_from_segment` を `-1` のままにすると、存在しない、または互換性のない最初のセグメントから生成を再開します。`N` を指定すると、セグメント `N` より前を維持し、`N` 以降をすべて再生成します。互換性判定にはローカルプロンプト、seed、フレーム構成、model・CLIP・sampler・sigmasの上流設定、参照入力、`initial_latent`、および直前セグメントからの生成系統を使用します。古いmanifest schemaのチェックポイントは再利用されません。
 
 後続セグメントは直前のLATENT末尾を引き継ぐため、前半のプロンプトを変更した場合は、その変更を含むセグメント以前から再生成してください。
 
@@ -81,7 +97,9 @@ output/h3_long_upscaled/
 
 `MiniMax H3 Long Reference Sampler` の `master_path` は、`MiniMax H3 Long Upscale Prepare` の `master_path` に直接接続できます。手入力の場合はbundleフォルダーまたはその `manifest.json` も指定できます。
 
-最終bundleの保存先は、元bundle直下の `upscale/` を基準にします。例えば `h3_long_video/123/master.mp4` からは `h3_long_video/123/upscale/master.mp4` を作ります。すでに同名フォルダーがある場合は上書きせず、`upscale_2/`、`upscale_3/` のように増やします。ループ中はSegment SaveがComfyUI内部の一時フォルダーへ保存し、Assembleが処理済みチェックポイントとプロンプトを決定済みの出力先へ移した後、一時jobフォルダーを削除します。
+最終bundleの保存先は、元bundle直下の `upscale/` を基準にします。例えば `h3_long_video/123/master.mp4` からは `h3_long_video/123/upscale/master.mp4` を作ります。すでに同名フォルダーがある場合は上書きせず、`upscale_2/`、`upscale_3/` のように増やします。Prepareが最初にこの永続bundleを確保し、Segment Saveは処理済みチェックポイントとプロンプトをそこへ直接保存します。途中で処理に失敗しても、完了済みセグメントと `processing` 状態のmanifestはoutputフォルダー内に残ります。Assembleはファイル移動を行わず、保存済みセグメントを検証してからMP4を作成します。
+
+中断したアップスケールを続行する場合は、同じUltimate Upscale設定を維持したまま、Prepareのadvanced入力 `resume` を有効にします。そのsourceで最新の未完了bundleを開き、元チェックポイントと保存済み出力を検証したうえで、未完了セグメントだけをループへ渡します。全セグメント保存後のMP4デコードだけが失敗していた場合は、Assembleへ新しいprogressを渡して再デコードできるよう、最終セグメントのみ再処理します。
 
 配線は `Prepare -> For Loop Start -> Segment Load -> MiniMax H3 Reference to Video -> MMH3 Ultimate Upscale -> Segment Save -> For Loop End -> Assemble` です。`segment_count` をループ回数へ、EasyUseの `index` を `segment_index` へ接続します。Segment Loadは、元LATENTに加えて、そのセグメントのローカルプロンプト、seed、元のwidth・height、生フレーム数を出力します。Segment Saveは処理済みLATENTをその場でSSDへ保存し、Loop Endには小さな進捗情報だけを渡します。全ループ完了後にAssembleが各チェックポイントを1本ずつデコードし、記録済みの継続用重複部分を除去して1本のMP4にします。
 
