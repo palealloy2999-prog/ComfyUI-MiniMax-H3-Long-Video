@@ -18,6 +18,8 @@ from minimax_h3_long_video import timeline
 from minimax_h3_long_video.nodes import (
     _add_continuation_guide, _expand_cache_name, _load_segment, _output_paths,
     _save_segment, _write_master, MiniMaxH3LongLatentUpscale,
+    MiniMaxH3LongSegmentLoad, MiniMaxH3LongSegmentSave,
+    MiniMaxH3LongUpscaleAssemble, MiniMaxH3LongUpscalePrepare,
 )
 from minimax_h3_long_video.timeline import plan_segments
 
@@ -275,6 +277,90 @@ class BackendTests(unittest.TestCase):
                 self.assertEqual(second[3], 2)
                 self.assertEqual(FakeUpscaler.calls, 2)
                 self.assertEqual(captured[-1], (2, 2, 64, 64))
+            finally:
+                for patch in reversed(patches):
+                    patch.stop()
+
+    def test_loop_upscale_nodes_load_save_and_assemble_by_segment_index(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            destination = root / "ultimate"
+            (source / "latents").mkdir(parents=True)
+            (source / "prompts").mkdir()
+            segments = plan_segments(80, 22, False, 73)
+            entries = []
+            for segment in segments:
+                latent, _ = h3._empty_av_latent(32, 32, segment.raw_frames)
+                checkpoint = source / "latents" / "segment_{:04d}.safetensors".format(segment.index)
+                prompt = source / "prompts" / "segment_{:04d}.txt".format(segment.index)
+                _save_segment(checkpoint, latent, {"schema": 9})
+                prompt.write_text("segment prompt {}".format(segment.index), encoding="utf-8")
+                entries.append({
+                    "index": segment.index,
+                    "file": checkpoint.name,
+                    "prompt_file": "prompts/{}".format(prompt.name),
+                    "output_start": segment.output_start,
+                    "output_frames": segment.output_frames,
+                    "raw_frames": segment.raw_frames,
+                    "context_frames": segment.context_frames,
+                    "seed": 1234,
+                })
+            (source / "manifest.json").write_text(json.dumps({
+                "schema": 9,
+                "status": "complete",
+                "fps": 24,
+                "latent_format": "minimax_h3_av",
+                "width": 32,
+                "height": 32,
+                "length": 80,
+                "segments": entries,
+            }), encoding="utf-8")
+
+            captured = []
+
+            def fake_master(path, checkpoints, planned, vae, audio_vae, width, height, crf):
+                captured.append((len(checkpoints), len(planned), width, height))
+                path.write_bytes(b"mp4")
+
+            patches = (
+                mock.patch.object(long_nodes.folder_paths, "get_output_directory", return_value=directory),
+                mock.patch.object(
+                    long_nodes, "_output_paths",
+                    return_value=(destination, destination / "master.mp4", "ultimate"),
+                ),
+                mock.patch.object(long_nodes, "_write_master", side_effect=fake_master),
+            )
+            for patch in patches:
+                patch.start()
+            try:
+                destination.mkdir()
+                (destination / "latents").mkdir()
+                prepared = MiniMaxH3LongUpscalePrepare.execute(str(source), "ultimate")
+                job, count = prepared[0], prepared[1]
+                self.assertEqual(count, 2)
+                progress = None
+                for index in range(count):
+                    loaded = MiniMaxH3LongSegmentLoad.execute(job, index)
+                    latent, prompt, seed, width, height, raw_frames, token = loaded
+                    self.assertEqual(prompt, "segment prompt {}".format(index))
+                    self.assertEqual(seed, 1234)
+                    self.assertEqual((width, height), (32, 32))
+                    self.assertEqual(raw_frames, segments[index].raw_frames)
+                    video, audio = latent["samples"].unbind()
+                    upscaled_video = video.repeat_interleave(2, dim=-2).repeat_interleave(2, dim=-1)
+                    upscaled = {
+                        "samples": long_nodes.comfy.nested_tensor.NestedTensor((upscaled_video, audio)),
+                    }
+                    progress = MiniMaxH3LongSegmentSave.execute(upscaled, token)[0]
+
+                assembled = MiniMaxH3LongUpscaleAssemble.execute(
+                    progress, VideoVAE(), AudioVAE(), 28)
+                self.assertEqual(assembled[3], 2)
+                self.assertEqual(captured, [(2, 2, 64, 64)])
+                manifest = json.loads((destination / "manifest.json").read_text(encoding="utf-8"))
+                self.assertEqual(manifest["status"], "complete")
+                self.assertTrue(all(item["status"] == "saved" for item in manifest["segments"]))
             finally:
                 for patch in reversed(patches):
                     patch.stop()

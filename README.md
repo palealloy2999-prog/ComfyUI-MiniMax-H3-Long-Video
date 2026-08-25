@@ -56,6 +56,16 @@ output/h3_long_upscaled/
     └── segment_0001.safetensors
 ```
 
+### Diffusion re-sampling with MMH3 Ultimate Upscale
+
+For diffusion-based latent enlargement, use the four loop support nodes with EasyUse's `For Loop Start` / `For Loop End` and `MMH3 Ultimate Upscale`. A ready-to-edit graph is included at [`sample/minimax_h3_long_ultimate_loop.json`](sample/minimax_h3_long_ultimate_loop.json).
+
+The loop wiring is `Prepare -> For Loop Start -> Segment Load -> MiniMax H3 Reference to Video -> MMH3 Ultimate Upscale -> Segment Save -> For Loop End -> Assemble`. `segment_count` drives the loop and EasyUse's `index` drives `segment_index`. The loader emits exactly one source latent plus its segment-local prompt, seed, source width and height, and raw frame count. The save node writes the processed latent to SSD immediately; only a small progress value is carried through Loop End. Assemble starts after the final iteration, decodes the saved checkpoints one at a time, removes the recorded continuation overlap, and writes one MP4.
+
+Connect the same reference images, videos, and audio used for the original generation to `MiniMax H3 Reference to Video`. Its `prompt` and `length` inputs come from Segment Load, and its width and height must match the target size configured for MMH3 Ultimate Upscale. Its empty-latent output is intentionally unused; Ultimate Upscale receives the loaded source latent.
+
+This workflow requires separately installed [ComfyUI-Easy-Use](https://github.com/yolain/ComfyUI-Easy-Use) and [Comfyui-MMH3-UltimateUpscale](https://github.com/bbaudio-2025/Comfyui-MMH3-UltimateUpscale), plus their required model weights. Replace the sample model names and reference image before running it.
+
 ## Current limits
 
 - MiniMax H3 AV latents only, batch size 1

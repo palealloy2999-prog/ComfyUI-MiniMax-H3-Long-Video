@@ -75,6 +75,16 @@ output/h3_long_upscaled/
     └── segment_0001.safetensors
 ```
 
+### MMH3 Ultimate Upscaleで再サンプリングする
+
+拡散モデルでLATENTを拡大・再サンプリングする場合は、追加した4つのループ補助ノードをEasyUseの `For Loop Start` / `For Loop End` および `MMH3 Ultimate Upscale` と組み合わせます。編集用サンプルは [`sample/minimax_h3_long_ultimate_loop.json`](sample/minimax_h3_long_ultimate_loop.json) です。
+
+配線は `Prepare -> For Loop Start -> Segment Load -> MiniMax H3 Reference to Video -> MMH3 Ultimate Upscale -> Segment Save -> For Loop End -> Assemble` です。`segment_count` をループ回数へ、EasyUseの `index` を `segment_index` へ接続します。Segment Loadは、元LATENTに加えて、そのセグメントのローカルプロンプト、seed、元のwidth・height、生フレーム数を出力します。Segment Saveは処理済みLATENTをその場でSSDへ保存し、Loop Endには小さな進捗情報だけを渡します。全ループ完了後にAssembleが各チェックポイントを1本ずつデコードし、記録済みの継続用重複部分を除去して1本のMP4にします。
+
+元の生成で使った参照画像・参照動画・音声は、`MiniMax H3 Reference to Video` にもう一度接続してください。`prompt` と `length` はSegment Loadから接続し、widthとheightはMMH3 Ultimate Upscale側の目標解像度と一致させます。このReference to Videoノードの空LATENT出力は使わず、MMH3 Ultimate UpscaleのLATENT入力にはSegment Loadの元LATENTを接続します。
+
+このワークフローには、別途 [ComfyUI-Easy-Use](https://github.com/yolain/ComfyUI-Easy-Use)、[Comfyui-MMH3-UltimateUpscale](https://github.com/bbaudio-2025/Comfyui-MMH3-UltimateUpscale)、および必要なモデルウェイトが必要です。実行前にサンプル内のモデル名と参照画像を環境に合わせて変更してください。
+
 ## 現在の制限
 
 - MiniMax H3のAV LATENT専用、バッチサイズ1
