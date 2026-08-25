@@ -1,0 +1,3252 @@
+{
+  "id": "423b0d3f-e696-448c-a3d4-3bb74d3b8c76",
+  "revision": 0,
+  "last_node_id": 500,
+  "last_link_id": 1086,
+  "nodes": [
+    {
+      "id": 411,
+      "type": "SolAttnPatch",
+      "pos": [
+        -90,
+        5980
+      ],
+      "size": [
+        270,
+        300
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1069
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            847
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SolAttnPatch"
+      },
+      "widgets_values": [
+        1.3,
+        0.2,
+        0.9,
+        4096,
+        true,
+        "exact_kv",
+        true,
+        "3d",
+        false,
+        false,
+        ""
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 430,
+      "type": "DiffusionModelLoaderKJ",
+      "pos": [
+        -950,
+        5980
+      ],
+      "size": [
+        530,
+        180
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "extra_state_dict",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            913
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DiffusionModelLoaderKJ"
+      },
+      "widgets_values": [
+        "minimax\\MiniMax-H3-Pruned-Ref-Delta-Fused-r1024-comfy-int8-convrot-fc2bf16.safetensors",
+        "default",
+        "default",
+        true,
+        "sageattn_qk_int8_pv_fp8_cuda++",
+        false
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 383,
+      "type": "BasicScheduler",
+      "pos": [
+        -950,
+        6710
+      ],
+      "size": [
+        380,
+        130
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 990
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            994
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        20,
+        1
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 198,
+      "type": "PrimitiveBoolean",
+      "pos": [
+        -1270,
+        6120
+      ],
+      "size": [
+        260,
+        60
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "BOOLEAN",
+          "type": "BOOLEAN",
+          "links": [
+            998
+          ]
+        }
+      ],
+      "title": "Enable Turbo LoRA?",
+      "properties": {
+        "Node name for S&R": "PrimitiveBoolean"
+      },
+      "widgets_values": [
+        true
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 446,
+      "type": "ComfyMathExpression",
+      "pos": [
+        -1270,
+        6590
+      ],
+      "size": [
+        230,
+        130
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "a",
+          "name": "values.a",
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 986
+        },
+        {
+          "label": "b",
+          "name": "values.b",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            987,
+            1080
+          ]
+        },
+        {
+          "name": "BOOL",
+          "type": "BOOLEAN",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyMathExpression"
+      },
+      "widgets_values": [
+        "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 459,
+      "type": "ComfyMathExpression",
+      "pos": [
+        -1270,
+        6950
+      ],
+      "size": [
+        230,
+        130
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "a",
+          "name": "values.a",
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 965
+        },
+        {
+          "label": "b",
+          "name": "values.b",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            970,
+            1081
+          ]
+        },
+        {
+          "name": "BOOL",
+          "type": "BOOLEAN",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyMathExpression"
+      },
+      "widgets_values": [
+        "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 464,
+      "type": "Note",
+      "pos": [
+        -1270,
+        6990
+      ],
+      "size": [
+        260,
+        160
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "動画を指定秒数に分割して生成します\n最大15\n60秒の動画を生成する際に15であれば4分割\n10であれば6分割して生成します"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 117,
+      "type": "MarkdownNote",
+      "pos": [
+        -1790,
+        5930
+      ],
+      "size": [
+        440,
+        740
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note: Model Links",
+      "properties": {},
+      "widgets_values": [
+        "## Model Links\n[🤗 Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3)\n\n**vae**\n\n- [minimax_h3_video_vae_fp16.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors)\n- [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors)\n\n**diffusion_models**\n\n- [minimax_h3_ref2va_pruned_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors)\n\n**text_encoders**\n\n- [qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors)\n\n\n## Model Storage Location\n\n```\n📂 ComfyUI/\n├── 📂 models/\n│   ├── 📂 vae/\n│   │   ├── minimax_h3_video_vae_fp16.safetensors\n│   │   └── minimax_h3_audio_vae_fp32.safetensors\n│   ├── 📂 diffusion_models/\n│   │   └── minimax_h3_ref2va_pruned_int8_convrot.safetensors\n│   └── 📂 text_encoders/\n│       └── qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\n```\n\n## Report Issue\n\nNote: Please update ComfyUI first ([guide](https://docs.comfy.org/installation/update_comfyui)) and prepare required models. Desktop/Cloud updates follow stable releases, so some nightly-supported models may not be available yet.\n\n- Cannot run / runtime errors: [ComfyUI/issues](https://github.com/comfyanonymous/ComfyUI/issues)\n- UI / frontend issues: [ComfyUI_frontend/issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues)\n- Workflow issues: [workflow_templates/issues](https://github.com/Comfy-Org/workflow_templates/issues)\n"
+      ],
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 460,
+      "type": "PrimitiveInt",
+      "pos": [
+        -1270,
+        6810
+      ],
+      "size": [
+        260,
+        90
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            965
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveInt"
+      },
+      "widgets_values": [
+        15,
+        "fixed"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 220,
+      "type": "PrimitiveFloat",
+      "pos": [
+        -1270,
+        6470
+      ],
+      "size": [
+        260,
+        70
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": [
+            986
+          ]
+        }
+      ],
+      "title": "Float (Duration)",
+      "properties": {
+        "Node name for S&R": "PrimitiveFloat"
+      },
+      "widgets_values": [
+        30
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 199,
+      "type": "CustomResolutionSelector",
+      "pos": [
+        -1270,
+        6230
+      ],
+      "size": [
+        260,
+        180
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            988,
+            1078
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            989,
+            1079
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CustomResolutionSelector"
+      },
+      "widgets_values": [
+        "5:8 portrait",
+        "0.4",
+        32,
+        ""
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 469,
+      "type": "MiniMaxH3LongLatentUpscale",
+      "pos": [
+        3370,
+        7940
+      ],
+      "size": [
+        380,
+        420
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 1005
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 1006
+        },
+        {
+          "name": "target_width",
+          "type": "INT",
+          "widget": {
+            "name": "target_width"
+          },
+          "link": 1008
+        },
+        {
+          "name": "target_height",
+          "type": "INT",
+          "widget": {
+            "name": "target_height"
+          },
+          "link": 1009
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": [
+            1007
+          ]
+        },
+        {
+          "name": "last_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "master_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "segment_count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LongLatentUpscale"
+      },
+      "widgets_values": [
+        "h3_long_video\\24\\video_",
+        "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+        1344,
+        768,
+        2,
+        "cuda",
+        "fp16",
+        "h3_long_upscaled",
+        false,
+        -1,
+        18
+      ]
+    },
+    {
+      "id": 471,
+      "type": "CustomResolutionSelector",
+      "pos": [
+        3040,
+        8070
+      ],
+      "size": [
+        260,
+        180
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            1008
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            1009
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CustomResolutionSelector"
+      },
+      "widgets_values": [
+        "5:8 portrait",
+        "0.6",
+        32,
+        ""
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 470,
+      "type": "SaveVideo",
+      "pos": [
+        3780,
+        7940
+      ],
+      "size": [
+        290,
+        160
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1007
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "%date:yyyy%/video/%date:MMdd%/%noise_seed.value%_",
+        "mp4",
+        "h264",
+        "auto",
+        "auto"
+      ]
+    },
+    {
+      "id": 223,
+      "type": "PrimitiveFloat",
+      "pos": [
+        -1270,
+        6640
+      ],
+      "size": [
+        260,
+        70
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": [
+            1032
+          ]
+        }
+      ],
+      "title": "Float (UpScale)",
+      "properties": {
+        "Node name for S&R": "PrimitiveFloat"
+      },
+      "widgets_values": [
+        1.5
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 137,
+      "type": "LoadImage",
+      "pos": [
+        -1270,
+        7300
+      ],
+      "size": [
+        290,
+        510
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1038,
+            1076
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "878780__00001_.png",
+        "image"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 412,
+      "type": "CLIPLoader",
+      "pos": [
+        -950,
+        6220
+      ],
+      "size": [
+        530,
+        130
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1044,
+            1071
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "models": [
+          {
+            "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+            "directory": "text_encoders"
+          }
+        ]
+      },
+      "widgets_values": [
+        "minimax\\qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 431,
+      "type": "BasicScheduler",
+      "pos": [
+        -530,
+        6960
+      ],
+      "size": [
+        370,
+        130
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 849
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            997
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        6,
+        1
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 445,
+      "type": "KSamplerSelect",
+      "pos": [
+        650,
+        6260
+      ],
+      "size": [
+        230,
+        70
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            1048,
+            1074
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "res_multistep"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 488,
+      "type": "easy forLoopStart",
+      "pos": [
+        -680,
+        8190
+      ],
+      "size": [
+        270,
+        100
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "initial_value1",
+          "shape": 7,
+          "type": "*",
+          "link": null
+        },
+        {
+          "name": "total",
+          "type": "INT",
+          "widget": {
+            "name": "total"
+          },
+          "link": 1029
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flow",
+          "shape": 5,
+          "type": "FLOW_CONTROL",
+          "links": [
+            1023
+          ]
+        },
+        {
+          "name": "index",
+          "type": "INT",
+          "links": [
+            1015
+          ]
+        },
+        {
+          "name": "value1",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "easy forLoopStart"
+      },
+      "widgets_values": [
+        1
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 399,
+      "type": "VAELoader",
+      "pos": [
+        -950,
+        6410
+      ],
+      "size": [
+        530,
+        70
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            1005,
+            1045,
+            1052,
+            1072
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "models": [
+          {
+            "name": "minimax_h3_video_vae_fp16.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors",
+            "directory": "vae"
+          }
+        ]
+      },
+      "widgets_values": [
+        "minimax\\minimax_h3_video_vae_fp16.safetensors"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 400,
+      "type": "VAELoader",
+      "pos": [
+        -950,
+        6540
+      ],
+      "size": [
+        530,
+        70
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            1006,
+            1046,
+            1053,
+            1073
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "models": [
+          {
+            "name": "minimax_h3_audio_vae_fp32.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+            "directory": "vae"
+          }
+        ]
+      },
+      "widgets_values": [
+        "minimax\\minimax_h3_audio_vae_fp32.safetensors"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 444,
+      "type": "Power Puter (rgthree)",
+      "pos": [
+        580,
+        5990
+      ],
+      "size": [
+        310,
+        220
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "a",
+          "type": "*",
+          "link": 998
+        },
+        {
+          "name": "b",
+          "type": "*",
+          "link": 997
+        },
+        {
+          "name": "c",
+          "type": "*",
+          "link": 996
+        },
+        {
+          "name": "d",
+          "type": "*",
+          "link": 994
+        },
+        {
+          "name": "e",
+          "type": "*",
+          "link": 995
+        },
+        {
+          "name": "f",
+          "type": "*",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "*",
+          "name": "*",
+          "shape": 3,
+          "type": "*",
+          "links": [
+            1075
+          ]
+        },
+        {
+          "label": "*",
+          "name": "",
+          "type": "*",
+          "links": [
+            957
+          ]
+        }
+      ],
+      "properties": {},
+      "widgets_values": [
+        {
+          "outputs": [
+            "*",
+            "*"
+          ]
+        },
+        "if a:\n return (b,c)\nelse:\n return (d,e)"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 487,
+      "type": "MiniMaxH3ReferenceToVideo",
+      "pos": [
+        140,
+        7940
+      ],
+      "size": [
+        350,
+        324
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1044
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 1045
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 1046
+        },
+        {
+          "label": "ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 1038
+        },
+        {
+          "label": "ref_image_1",
+          "name": "ref_images.ref_image_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_0",
+          "name": "ref_videos.ref_video_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_audio_0",
+          "name": "ref_video_audios.ref_video_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "label": "ref_audio_0",
+          "name": "ref_audios.ref_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 1027
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 1054
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 1055
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": 1028
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            1067
+          ]
+        },
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ReferenceToVideo"
+      },
+      "widgets_values": [
+        "loaded from segment prompt",
+        1280,
+        704,
+        124,
+        "match"
+      ]
+    },
+    {
+      "id": 413,
+      "type": "SpectrumApplyMiniMaxH3",
+      "pos": [
+        220,
+        5980
+      ],
+      "size": [
+        290,
+        420
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 847
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            990,
+            991,
+            995
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SpectrumApplyMiniMaxH3"
+      },
+      "widgets_values": [
+        true,
+        0.5,
+        4,
+        0.1,
+        2,
+        0.75,
+        5,
+        1,
+        8,
+        false,
+        "system_ram",
+        true,
+        false,
+        false,
+        true,
+        0
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 483,
+      "type": "easy forLoopEnd",
+      "pos": [
+        1830,
+        8090
+      ],
+      "size": [
+        170,
+        70
+      ],
+      "flags": {},
+      "order": 46,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "flow",
+          "shape": 5,
+          "type": "FLOW_CONTROL",
+          "link": 1023
+        },
+        {
+          "name": "initial_value1",
+          "shape": 7,
+          "type": "*",
+          "link": 1059
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value1",
+          "type": "*",
+          "links": [
+            1065
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "easy forLoopEnd"
+      },
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 496,
+      "type": "easy cleanGpuUsed",
+      "pos": [
+        2070,
+        8090
+      ],
+      "size": [
+        161.3404296875,
+        26
+      ],
+      "flags": {},
+      "order": 47,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "anything",
+          "type": "*",
+          "link": 1065
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "*",
+          "links": [
+            1066
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "easy cleanGpuUsed"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 495,
+      "type": "MiniMaxH3PreviewOverride",
+      "pos": [
+        660,
+        8140
+      ],
+      "size": [
+        260,
+        550
+      ],
+      "flags": {},
+      "order": 38,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1063
+        },
+        {
+          "label": "Tiny VAE",
+          "name": "tiny_vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1064
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreviewOverride"
+      },
+      "widgets_values": [
+        1016,
+        80,
+        true,
+        16,
+        3,
+        "taeh3_decoder.safetensors",
+        ""
+      ]
+    },
+    {
+      "id": 478,
+      "type": "MiniMaxH3LongSegmentLoad",
+      "pos": [
+        -330,
+        8210
+      ],
+      "size": [
+        330,
+        180
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "job",
+          "type": "MINIMAX_H3_LONG_UPSCALE_JOB",
+          "link": 1014
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "widget": {
+            "name": "segment_index"
+          },
+          "link": 1015
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            1017
+          ]
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            1027
+          ]
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "links": [
+            1051
+          ]
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            1031,
+            1054
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            1033,
+            1055
+          ]
+        },
+        {
+          "name": "raw_frames",
+          "type": "INT",
+          "links": [
+            1028
+          ]
+        },
+        {
+          "name": "segment",
+          "type": "MINIMAX_H3_LONG_SEGMENT",
+          "links": [
+            1022
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LongSegmentLoad"
+      },
+      "widgets_values": [
+        0
+      ]
+    },
+    {
+      "id": 479,
+      "type": "MMH3UltimateUpscale",
+      "pos": [
+        970,
+        8140
+      ],
+      "size": [
+        290,
+        450
+      ],
+      "flags": {},
+      "order": 40,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1064
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 1067
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 1017
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 1050
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 1048
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 1056
+        },
+        {
+          "name": "negative",
+          "shape": 7,
+          "type": "CONDITIONING",
+          "link": null
+        },
+        {
+          "name": "latent_upscale_param",
+          "shape": 7,
+          "type": "H3_UPSCALE_PARAM",
+          "link": 1018
+        },
+        {
+          "name": "temporal_split_param",
+          "shape": 7,
+          "type": "H3_TEMPORAL_PARAM",
+          "link": 1019
+        },
+        {
+          "name": "spatial_split_param",
+          "shape": 7,
+          "type": "H3_SPATIAL_PARAM",
+          "link": 1020
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            1021
+          ]
+        },
+        {
+          "name": "segments_info",
+          "type": "DICT",
+          "links": null
+        },
+        {
+          "name": "tiles_info",
+          "type": "DICT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MMH3UltimateUpscale"
+      },
+      "widgets_values": [
+        1
+      ]
+    },
+    {
+      "id": 491,
+      "type": "Note",
+      "pos": [
+        -1260,
+        8390
+      ],
+      "size": [
+        530,
+        150
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "source_pathにはアップスケール対象のmanufestファイルのパスを入れる"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 482,
+      "type": "MiniMaxH3LongSegmentSave",
+      "pos": [
+        1300,
+        8140
+      ],
+      "size": [
+        300,
+        100
+      ],
+      "flags": {},
+      "order": 42,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 1021
+        },
+        {
+          "name": "segment",
+          "type": "MINIMAX_H3_LONG_SEGMENT",
+          "link": 1022
+        }
+      ],
+      "outputs": [
+        {
+          "name": "progress",
+          "type": "MINIMAX_H3_LONG_UPSCALE_PROGRESS",
+          "links": [
+            1058
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LongSegmentSave"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 493,
+      "type": "easy cleanGpuUsed",
+      "pos": [
+        1630,
+        8140
+      ],
+      "size": [
+        161.3404296875,
+        26
+      ],
+      "flags": {},
+      "order": 44,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "anything",
+          "type": "*",
+          "link": 1058
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "*",
+          "links": [
+            1059
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "easy cleanGpuUsed"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 490,
+      "type": "RandomNoise",
+      "pos": [
+        -270,
+        8450
+      ],
+      "size": [
+        270,
+        90
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "noise_seed",
+          "type": "INT",
+          "widget": {
+            "name": "noise_seed"
+          },
+          "link": 1051
+        }
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            1050
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        437299826425158,
+        "randomize"
+      ]
+    },
+    {
+      "id": 477,
+      "type": "Power Puter (rgthree)",
+      "pos": [
+        -270,
+        8600
+      ],
+      "size": [
+        280,
+        180
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "a",
+          "type": "*",
+          "link": 1031
+        },
+        {
+          "name": "b",
+          "type": "*",
+          "link": 1033
+        },
+        {
+          "name": "c",
+          "type": "*",
+          "link": 1032
+        },
+        {
+          "name": "d",
+          "type": "*",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "INT",
+          "name": "*",
+          "shape": 3,
+          "type": "INT",
+          "links": [
+            1034,
+            1036
+          ]
+        },
+        {
+          "label": "INT",
+          "name": "",
+          "type": "INT",
+          "links": [
+            1035,
+            1037
+          ]
+        }
+      ],
+      "properties": {},
+      "widgets_values": [
+        {
+          "outputs": [
+            "INT",
+            "INT"
+          ]
+        },
+        "return(round(a*c/32)*32,round(b*c/32)*32)"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 492,
+      "type": "BasicScheduler",
+      "pos": [
+        140,
+        8450
+      ],
+      "size": [
+        350,
+        130
+      ],
+      "flags": {},
+      "order": 37,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1057
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            1056
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        4,
+        0.5
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 489,
+      "type": "MMH3LatentUpscaleWithModelParams",
+      "pos": [
+        140,
+        8640
+      ],
+      "size": [
+        350,
+        170
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 1034
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 1035
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent_upscale_param",
+          "type": "H3_UPSCALE_PARAM",
+          "links": [
+            1018
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MMH3LatentUpscaleWithModelParams"
+      },
+      "widgets_values": [
+        "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+        1280,
+        704,
+        "cuda",
+        "fp16"
+      ]
+    },
+    {
+      "id": 480,
+      "type": "MMH3TemporalSplitParams",
+      "pos": [
+        140,
+        8860
+      ],
+      "size": [
+        350,
+        110
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "temporal_split_param",
+          "type": "H3_TEMPORAL_PARAM",
+          "links": [
+            1019
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MMH3TemporalSplitParams"
+      },
+      "widgets_values": [
+        85,
+        17,
+        0.999
+      ]
+    },
+    {
+      "id": 481,
+      "type": "MMH3SpatialSplitParams",
+      "pos": [
+        140,
+        9030
+      ],
+      "size": [
+        350,
+        260
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "tile_width",
+          "type": "INT",
+          "widget": {
+            "name": "tile_width"
+          },
+          "link": 1036
+        },
+        {
+          "name": "tile_height",
+          "type": "INT",
+          "widget": {
+            "name": "tile_height"
+          },
+          "link": 1037
+        }
+      ],
+      "outputs": [
+        {
+          "name": "spatial_split_param",
+          "type": "H3_SPATIAL_PARAM",
+          "links": [
+            1020
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MMH3SpatialSplitParams"
+      },
+      "widgets_values": [
+        864,
+        480,
+        128,
+        128,
+        32,
+        32,
+        256,
+        "earlier",
+        "linear"
+      ]
+    },
+    {
+      "id": 486,
+      "type": "SaveVideo",
+      "pos": [
+        2420,
+        8070
+      ],
+      "size": [
+        540,
+        1023.5000000000009
+      ],
+      "flags": {},
+      "order": 49,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1026
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "%date:yyyy%/video/%date:MMdd%/%RandomNoise.seed%_",
+        "mp4",
+        "h264",
+        "auto",
+        "auto"
+      ]
+    },
+    {
+      "id": 429,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        -950,
+        6960
+      ],
+      "size": [
+        380,
+        180
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 991
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            849,
+            996,
+            1057,
+            1063
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderModelOnly"
+      },
+      "widgets_values": [
+        "miniMaxH3\\minimax_h3_ref2v_lightx2v_turbo_4step_v0.1_resized_avg_rank_20_bf16.safetensors",
+        0.8
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 416,
+      "type": "MiniMaxH3SigmaShift",
+      "pos": [
+        -390,
+        5980
+      ],
+      "size": [
+        270,
+        90
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 913
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1068
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SigmaShift"
+      },
+      "widgets_values": [
+        12,
+        3
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 497,
+      "type": "MiniMaxChunkFeedForward",
+      "pos": [
+        -390,
+        6120
+      ],
+      "size": [
+        270,
+        90
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1068
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            1069
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxChunkFeedForward"
+      },
+      "widgets_values": [
+        2,
+        4096
+      ]
+    },
+    {
+      "id": 291,
+      "type": "MiniMaxH3PreviewOverride",
+      "pos": [
+        950,
+        5950
+      ],
+      "size": [
+        500,
+        750
+      ],
+      "flags": {},
+      "order": 41,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 957
+        },
+        {
+          "label": "Tiny VAE",
+          "name": "tiny_vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1070
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreviewOverride"
+      },
+      "widgets_values": [
+        1016,
+        80,
+        true,
+        16,
+        3,
+        "taeh3_decoder.safetensors",
+        ""
+      ]
+    },
+    {
+      "id": 455,
+      "type": "PrimitiveNode",
+      "pos": [
+        -1270,
+        5980
+      ],
+      "size": [
+        250,
+        90
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "widget": {
+            "name": "noise_seed"
+          },
+          "links": [
+            1083
+          ]
+        }
+      ],
+      "title": "noise_seed",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        914891571302284,
+        "randomize"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 498,
+      "type": "MiniMaxH3LongReferenceSampler",
+      "pos": [
+        1520,
+        5950
+      ],
+      "size": [
+        400,
+        1234
+      ],
+      "flags": {},
+      "order": 43,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1070
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1071
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 1072
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 1073
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 1074
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 1075
+        },
+        {
+          "name": "initial_latent",
+          "shape": 7,
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "label": "ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 1076
+        },
+        {
+          "label": "ref_image_1",
+          "name": "ref_images.ref_image_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_0",
+          "name": "ref_videos.ref_video_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_audio_0",
+          "name": "ref_video_audios.ref_video_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "label": "ref_audio_0",
+          "name": "ref_audios.ref_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 1077
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 1078
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 1079
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": 1080
+        },
+        {
+          "name": "max_raw_frames",
+          "type": "INT",
+          "widget": {
+            "name": "max_raw_frames"
+          },
+          "link": 1081
+        },
+        {
+          "name": "noise_seed",
+          "type": "INT",
+          "widget": {
+            "name": "noise_seed"
+          },
+          "link": 1083
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": [
+            1084
+          ]
+        },
+        {
+          "name": "last_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "master_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "segment_count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LongReferenceSampler"
+      },
+      "widgets_values": [
+        "",
+        1344,
+        768,
+        720,
+        124,
+        "22",
+        914891571302284,
+        "randomize",
+        "h3_long_video/%noise_seed.value%/video_",
+        false,
+        -1,
+        18,
+        "match"
+      ]
+    },
+    {
+      "id": 450,
+      "type": "SaveVideo",
+      "pos": [
+        1980,
+        5950
+      ],
+      "size": [
+        890,
+        1592.25
+      ],
+      "flags": {},
+      "order": 45,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1084
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "%date:yyyy%/video/%date:MMdd%/%noise_seed.value%_",
+        "mp4",
+        "h264",
+        "auto",
+        "auto"
+      ]
+    },
+    {
+      "id": 466,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        -90,
+        6760
+      ],
+      "size": [
+        1540,
+        1030
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            1002,
+            1077
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": [
+        "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: A 30-second bright, uplifting anime-style digital-pop music video with constantly evolving camera composition, colorful geometric motion graphics, abundant luminous particles, kinetic Japanese lyric typography, and a light floating dance performance.\n\nUse <Picture 1> as the sole authoritative reference for the girl. Preserve the exact character identity, face, hairstyle, outfit, body proportions, accessories, and visual style throughout. Do not redesign or re-costume her.\n\nAvoid keeping the girl in a static front-facing composition for long periods. Continuously vary viewing angle, framing, camera distance, and camera movement while keeping the character visually readable.\n\nUse front three-quarter views, side views, rear three-quarter views, low angles, high angles, overhead compositions, medium shots, full-body shots, close-ups, and extreme facial detail cut-ins.\n\nUse smooth Push Ins, Pull Outs, Pans, Tilts, Arc Shots, Tracking Shots, and occasional fast perspective changes synchronized with musical accents.\n\nThe environment is an abstract luminous digital-pop space filled with animated circles, triangles, hexagons, dot grids, glowing nodes, waveform graphics, floating squares, translucent layers, diagonal grids, ribbons of light, sparkles, pixel particles, expanding rings, and colorful graphic fragments.\n\nThe girl performs light, cheerful, musically expressive movement: floating, drifting, turning, stepping, bouncing, reaching, spinning gently, and performing short pop-dance gestures. She is not restricted to standing on a floor. Gravity may become light or temporarily disappear.\n\nImportant Japanese lyric keywords become large kinetic typography integrated into the composition. The text can move behind the girl, cross the foreground, rotate around her, break into particles, expand into geometric patterns, or travel through depth. Do not render the lyrics as ordinary bottom subtitles.\n\nThe visual density progressively increases until approximately 25.5 seconds, then opens into a calm instrumental visual outro.\n\n[Shot 1] Begin inside a soft luminous digital space.\n\nStart with a high three-quarter camera angle looking slightly downward at the girl from <Picture 1>, rather than a direct frontal shot.\n\nShe floats gently above a field of glowing dots and thin circular rings.\n\nThe camera slowly descends with a Pedestal Down while simultaneously performing a subtle Push In.\n\nShe turns her upper body slightly toward the moving camera and raises one hand.\n\nLyrics: <d>[Japanese]\nひかるシグナル\n空までリンク </d>\n\n“シグナル” appears as bright cyan Japanese typography beside her.\n\nConcentric transmission rings expand from the word.\n\n“リンク” creates luminous lines that connect multiple floating nodes around her.\n\nTiny particles travel through the connected lines like packets of light.\n\nMusic cue: Begin with airy pads, sparkling synth notes, light electronic percussion, and a sweet youthful female vocal. Keep the opening spacious and transparent.\n\n[Shot 2] At 00:03.500, cut to a low-angle side three-quarter view.\n\nThe camera performs a smooth Arc Shot around the girl from her left side toward a rear three-quarter angle.\n\nShe takes two light rhythmic steps, then gently rises into the air as if the beat lifts her.\n\nHer hair and clothing respond naturally to the floating motion.\n\nLyrics: <d>[Japanese]\nことばをひとつ\nビートにのせて </d>\n\n“ことば” slides horizontally through the middle distance.\n\n“ビート” suddenly Pushes toward the camera on a strong beat, briefly filling much of the frame before streaking past.\n\nAnimated waveform lines pulse behind her.\n\nYellow, peach, cyan, and white particle bursts accent the rhythm.\n\n[Shot 3] At 00:07.000, cut sharply to an intimate facial close-up from a slight side angle.\n\nDo not use a perfectly symmetrical front-facing portrait.\n\nFrame her face from a front three-quarter angle.\n\nThe camera slowly Trucks sideways while maintaining close framing, creating subtle parallax between her face and the floating graphic layers.\n\nShe blinks naturally, looks briefly toward the moving camera, then slightly upward.\n\nLyrics: <d>[Japanese]\nきらめくピクセル\n風にほどける </d>\n\nOn “ピクセル”, hundreds of tiny square particles form around her face and hair.\n\nThe camera Tilts upward slightly as the pixels rise.\n\nOn “ほどける”, the typography separates into individual glowing fragments that drift past the lens.\n\nTransition out of the close-up by allowing the particles to momentarily fill the entire frame.\n\n[Shot 4] At 00:10.500, emerge from the particle transition into a very wide full-body shot.\n\nThe camera is positioned behind and slightly below the girl in a rear three-quarter composition.\n\nShe floats forward into a huge luminous geometric space.\n\nThe camera Tracks behind her, then slowly Pulls Out to reveal enormous circles, diagonal grids, transparent polygons, and glowing lines extending into depth.\n\nShe spins lightly in midair, then reaches toward a large floating interface-like circle.\n\nLyrics: <d>[Japanese]\nタップしたなら\n世界がひらく </d>\n\nOn “タップ”, her fingertip touches the floating circle.\n\nA circular ripple expands violently outward.\n\nOn “世界がひらく”, multiple geometric panels separate in depth and the entire digital environment opens into a much larger colorful space.\n\nUse a fast Tilt Up during the reveal to emphasize vertical scale.\n\nMusic cue: The electronic-pop arrangement becomes fuller with a buoyant bass line, brighter drums, layered arpeggiators, and stronger harmonic lift while preserving an airy transparent sound.\n\n[Shot 5] At 00:15.000, begin the second 15-second section with a completely different camera composition.\n\nCut to a dynamic side Tracking Shot.\n\nThe girl moves laterally through the abstract space while floating approximately one meter above an implied surface.\n\nThe camera travels parallel to her at moderate speed.\n\nShe performs a rhythmic step-in-the-air, small turn, arm sweep, and gentle kick-like dance gesture.\n\nLyrics: <d>[Japanese]\nゼロとイチでも\n気持ちはほんもの </d>\n\nLarge glowing “0” and “1” symbols stream through the environment at different depths.\n\nThe camera briefly passes through several translucent binary layers.\n\n“ほんもの” appears as warm, stable white-yellow typography directly behind the girl, contrasting with the cool digital imagery.\n\nUse cyan, white, coral, and pale gold.\n\nMusic cue: Continue the same song seamlessly, now brighter and more energetic. Add stronger rhythmic drive, shimmering high synths, wider chords, and more prominent melodic arpeggios.\n\n[Shot 6] At 00:18.500, perform a fast camera transition into a low-angle front three-quarter shot.\n\nThe camera Pushes In while the girl floats upward.\n\nShe reaches one hand above her head and rotates slowly while glowing node-lines form around her.\n\nHalfway through the shot, the camera arcs past her shoulder toward a side profile rather than remaining frontal.\n\nLyrics: <d>[Japanese]\n声をつないで\nもっと遠くへ </d>\n\n“声” generates expanding waveform rings.\n\n“つないで” creates bright lines connecting geometric nodes across the entire frame.\n\nOn “もっと遠くへ”, the camera abruptly Pulls Out with large amplitude.\n\nThe girl becomes smaller while the linked network expands enormously into the distance.\n\nLong luminous particle streams travel outward toward the horizon of the digital space.\n\n[Shot 7] At 00:22.000, cut to a high overhead angle.\n\nThe girl spins gently below the camera, surrounded by concentric rings and rotating geometric shapes.\n\nThe camera performs a slow Roll of approximately 20–30 degrees while simultaneously descending toward her.\n\nAs the camera approaches, she looks upward toward it.\n\nTransition into an extreme close-up of her eyes and smile for less than one second.\n\nThen rapidly Pull Out again into a medium-full-body three-quarter composition.\n\nLyrics: <d>[Japanese]\n今日のわたしを\n君へ送信！ </d>\n\n“今日のわたし” appears in several luminous layers behind her.\n\n“君へ” creates a bright directional path extending from the girl toward deep space.\n\nOn the final word “送信！”, she reaches one hand forward.\n\nThe camera performs a rapid Push In toward the hand.\n\nAt the exact musical climax, “送信！” explodes outward as gigantic Japanese typography accompanied by a massive burst of particles, rainbow-colored geometric fragments, concentric rings, pixel trails, glowing lines, and expanding digital waves.\n\nThe girl remains clearly visible at the center of the explosion.\n\nAll sung lyrics must finish by approximately 25.5 seconds.\n\nMusic cue: Reach the brightest and most uplifting musical climax here. Use full rhythmic electronic-pop energy, sparkling arpeggios, wide synth chords, buoyant bass, bright drums, and the strongest melodic lift of the video. Synchronize the final “送信！” with a major musical accent.\n\n[Shot 8] At 00:25.500, vocals stop completely.\n\nInstrumental outro only.\n\nThe explosion of geometric particles from the previous shot continues expanding outward.\n\nThe camera moves through the particle cloud and reveals the girl from a distant rear three-quarter angle.\n\nShe slowly floats upward through a spacious sky-blue and white digital environment.\n\nReduce the number of graphic elements gradually.\n\nPreviously used fragments such as “シグナル”, “LINK”, “PIXEL”, “0”, “1”, and “送信！” drift quietly through the background as small decorative elements only. They are not sung.\n\nThe camera slowly Pans horizontally while Tracking her movement.\n\nShe turns gently in midair and glances back over her shoulder.\n\n[Shot 9] At 00:27.500, cut to the final wide composition from a diagonal side-rear angle.\n\nDo not return to a centered frontal camera.\n\nThe girl continues drifting forward and upward.\n\nThe camera performs a very slow Pull Out and slight Tilt Up.\n\nSoft rainbow particles and thin luminous lines travel past the camera at different depths, creating strong parallax.\n\nThe geometric world becomes increasingly open and minimal.\n\nSmall particles continue sparkling around her while the music gradually simplifies.\n\nEnd with the girl still moving through the luminous space rather than stopping in a static pose.\n\nMusic cue: Instrumental outro only. Remove the vocal completely. Reduce the drums, leaving shimmering synth arpeggios, warm sustained chords, delicate high electronic tones, and a gentle melodic tail. Allow the arrangement to breathe and naturally soften through the final frame.\n\nCharacter-consistency requirement: <Picture 1> is the sole authoritative visual reference for the girl. Preserve the exact same face, hairstyle, outfit, accessories, proportions, and overall design throughout every camera angle and framing.\n\nCamera-variety requirement: Do not default to a fixed frontal camera. Use frequent but readable composition changes including front three-quarter, side profile, rear three-quarter, low angle, high angle, overhead, medium-full-body, close-up, and extreme facial detail. Avoid holding the exact same angle for more than a few seconds.\n\nCamera-motion requirement: Actively use Push In, Pull Out, Pan, Tilt, Arc Shot, Tracking Shot, Truck, Pedestal, and limited Roll when appropriate. Camera motion should be smooth and intentional, synchronized with the music rather than random handheld movement.\n\nPerformance requirement: The girl should continuously respond to the rhythm with floating movement, small dance phrases, turns, reaches, body rotations, steps, and expressive hand gestures. Avoid repetitive idle swaying.\n\nGeometric-animation requirement: Continuously evolve the graphic environment. Use circles, rings, triangles, hexagons, squares, grids, nodes, connecting lines, waveform motifs, dot matrices, ribbons, binary symbols, pixel fragments, and abundant luminous particles. Change scale, depth, direction, and density so the background never feels static.\n\nDepth requirement: Place graphic elements both in front of and behind the character. Use foreground particles passing close to the lens, midground typography, and distant geometric structures to create strong visual depth and parallax.\n\nLyric-motion requirement: Important words function as active parts of the music-video composition rather than subtitles. Typography may expand, travel through depth, break into particles, connect to geometric lines, pass behind the character, or briefly cross the foreground.\n\nFace-cut-in requirement: Facial close-ups should use three-quarter or side-biased camera angles whenever possible rather than repetitive symmetrical front portraits. Include natural blinking, subtle gaze changes, and gentle expression changes.\n\nTiming requirement: All sung lyrics must finish by approximately 25.5 seconds. Do not add any new vocal line afterward. Reserve approximately 4.5 seconds for instrumental outro and visual breathing room.\n\nMusic-synchronization requirement: Synchronize dance gestures, camera accelerations, Push Ins, Pull Outs, particle bursts, typography impacts, geometric expansions, and major transitions with strong beats, melodic accents, rises, and drops.\n\noverall_soundscape: Keep environmental sound minimal. The song and vocal dominate. Only faint stylized digital shimmer, soft transition sweeps, and subtle sparkling accents may sit underneath the music.\n\nnon_diegetic_music: Follow the local Music cue specified inside each Shot. Maintain one continuous bright, transparent, uplifting electronic-pop song across the complete 30 seconds. Preserve seamless musical continuity across the 15-second segment boundary. The vocal must finish by approximately 25.5 seconds, followed only by the instrumental outro.\n"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 485,
+      "type": "MiniMaxH3LongUpscalePrepare",
+      "pos": [
+        -1230,
+        7980
+      ],
+      "size": [
+        560,
+        130
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "job",
+          "type": "MINIMAX_H3_LONG_UPSCALE_JOB",
+          "links": [
+            1014
+          ]
+        },
+        {
+          "name": "segment_count",
+          "type": "INT",
+          "links": [
+            1029
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LongUpscalePrepare"
+      },
+      "widgets_values": [
+        "D:\\AI_art\\Data\\Images\\Text2Img\\h3_long_video\\24\\video_"
+      ]
+    },
+    {
+      "id": 484,
+      "type": "MiniMaxH3LongUpscaleAssemble",
+      "pos": [
+        1980,
+        8230
+      ],
+      "size": [
+        400,
+        640
+      ],
+      "flags": {},
+      "order": 48,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "progress",
+          "type": "MINIMAX_H3_LONG_UPSCALE_PROGRESS",
+          "link": 1066
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 1052
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 1053
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": [
+            1026
+          ]
+        },
+        {
+          "name": "last_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "master_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "segment_count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LongUpscaleAssemble"
+      },
+      "widgets_values": [
+        18
+      ]
+    }
+  ],
+  "links": [
+    [
+      847,
+      411,
+      0,
+      413,
+      0,
+      "MODEL"
+    ],
+    [
+      849,
+      429,
+      0,
+      431,
+      0,
+      "MODEL"
+    ],
+    [
+      913,
+      430,
+      0,
+      416,
+      0,
+      "MODEL"
+    ],
+    [
+      957,
+      444,
+      1,
+      291,
+      0,
+      "MODEL"
+    ],
+    [
+      965,
+      460,
+      0,
+      459,
+      0,
+      "INT"
+    ],
+    [
+      986,
+      220,
+      0,
+      446,
+      0,
+      "FLOAT"
+    ],
+    [
+      990,
+      413,
+      0,
+      383,
+      0,
+      "MODEL"
+    ],
+    [
+      991,
+      413,
+      0,
+      429,
+      0,
+      "MODEL"
+    ],
+    [
+      994,
+      383,
+      0,
+      444,
+      3,
+      "SIGMAS"
+    ],
+    [
+      995,
+      413,
+      0,
+      444,
+      4,
+      "MODEL"
+    ],
+    [
+      996,
+      429,
+      0,
+      444,
+      2,
+      "MODEL"
+    ],
+    [
+      997,
+      431,
+      0,
+      444,
+      1,
+      "SIGMAS"
+    ],
+    [
+      998,
+      198,
+      0,
+      444,
+      0,
+      "BOOLEAN"
+    ],
+    [
+      1005,
+      399,
+      0,
+      469,
+      0,
+      "VAE"
+    ],
+    [
+      1006,
+      400,
+      0,
+      469,
+      1,
+      "VAE"
+    ],
+    [
+      1007,
+      469,
+      0,
+      470,
+      0,
+      "VIDEO"
+    ],
+    [
+      1008,
+      471,
+      0,
+      469,
+      2,
+      "INT"
+    ],
+    [
+      1009,
+      471,
+      1,
+      469,
+      3,
+      "INT"
+    ],
+    [
+      1014,
+      485,
+      0,
+      478,
+      0,
+      "MINIMAX_H3_LONG_UPSCALE_JOB"
+    ],
+    [
+      1015,
+      488,
+      1,
+      478,
+      1,
+      "INT"
+    ],
+    [
+      1017,
+      478,
+      0,
+      479,
+      2,
+      "LATENT"
+    ],
+    [
+      1018,
+      489,
+      0,
+      479,
+      7,
+      "H3_UPSCALE_PARAM"
+    ],
+    [
+      1019,
+      480,
+      0,
+      479,
+      8,
+      "H3_TEMPORAL_PARAM"
+    ],
+    [
+      1020,
+      481,
+      0,
+      479,
+      9,
+      "H3_SPATIAL_PARAM"
+    ],
+    [
+      1021,
+      479,
+      0,
+      482,
+      0,
+      "LATENT"
+    ],
+    [
+      1022,
+      478,
+      6,
+      482,
+      1,
+      "MINIMAX_H3_LONG_SEGMENT"
+    ],
+    [
+      1023,
+      488,
+      0,
+      483,
+      0,
+      "FLOW_CONTROL"
+    ],
+    [
+      1026,
+      484,
+      0,
+      486,
+      0,
+      "VIDEO"
+    ],
+    [
+      1027,
+      478,
+      1,
+      487,
+      8,
+      "STRING"
+    ],
+    [
+      1028,
+      478,
+      5,
+      487,
+      11,
+      "INT"
+    ],
+    [
+      1029,
+      485,
+      1,
+      488,
+      1,
+      "INT"
+    ],
+    [
+      1031,
+      478,
+      3,
+      477,
+      0,
+      "INT"
+    ],
+    [
+      1032,
+      223,
+      0,
+      477,
+      2,
+      "FLOAT"
+    ],
+    [
+      1033,
+      478,
+      4,
+      477,
+      1,
+      "INT"
+    ],
+    [
+      1034,
+      477,
+      0,
+      489,
+      0,
+      "INT"
+    ],
+    [
+      1035,
+      477,
+      1,
+      489,
+      1,
+      "INT"
+    ],
+    [
+      1036,
+      477,
+      0,
+      481,
+      0,
+      "INT"
+    ],
+    [
+      1037,
+      477,
+      1,
+      481,
+      1,
+      "INT"
+    ],
+    [
+      1038,
+      137,
+      0,
+      487,
+      3,
+      "IMAGE"
+    ],
+    [
+      1044,
+      412,
+      0,
+      487,
+      0,
+      "CLIP"
+    ],
+    [
+      1045,
+      399,
+      0,
+      487,
+      1,
+      "VAE"
+    ],
+    [
+      1046,
+      400,
+      0,
+      487,
+      2,
+      "VAE"
+    ],
+    [
+      1048,
+      445,
+      0,
+      479,
+      4,
+      "SAMPLER"
+    ],
+    [
+      1050,
+      490,
+      0,
+      479,
+      3,
+      "NOISE"
+    ],
+    [
+      1051,
+      478,
+      2,
+      490,
+      0,
+      "INT"
+    ],
+    [
+      1052,
+      399,
+      0,
+      484,
+      1,
+      "VAE"
+    ],
+    [
+      1053,
+      400,
+      0,
+      484,
+      2,
+      "VAE"
+    ],
+    [
+      1054,
+      478,
+      3,
+      487,
+      9,
+      "INT"
+    ],
+    [
+      1055,
+      478,
+      4,
+      487,
+      10,
+      "INT"
+    ],
+    [
+      1056,
+      492,
+      0,
+      479,
+      5,
+      "SIGMAS"
+    ],
+    [
+      1057,
+      429,
+      0,
+      492,
+      0,
+      "MODEL"
+    ],
+    [
+      1058,
+      482,
+      0,
+      493,
+      0,
+      "MINIMAX_H3_LONG_UPSCALE_PROGRESS"
+    ],
+    [
+      1059,
+      493,
+      0,
+      483,
+      1,
+      "*"
+    ],
+    [
+      1063,
+      429,
+      0,
+      495,
+      0,
+      "MODEL"
+    ],
+    [
+      1064,
+      495,
+      0,
+      479,
+      0,
+      "MODEL"
+    ],
+    [
+      1065,
+      483,
+      0,
+      496,
+      0,
+      "*"
+    ],
+    [
+      1066,
+      496,
+      0,
+      484,
+      0,
+      "MINIMAX_H3_LONG_UPSCALE_PROGRESS"
+    ],
+    [
+      1067,
+      487,
+      0,
+      479,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      1068,
+      416,
+      0,
+      497,
+      0,
+      "MODEL"
+    ],
+    [
+      1069,
+      497,
+      0,
+      411,
+      0,
+      "MODEL"
+    ],
+    [
+      1070,
+      291,
+      0,
+      498,
+      0,
+      "MODEL"
+    ],
+    [
+      1071,
+      412,
+      0,
+      498,
+      1,
+      "CLIP"
+    ],
+    [
+      1072,
+      399,
+      0,
+      498,
+      2,
+      "VAE"
+    ],
+    [
+      1073,
+      400,
+      0,
+      498,
+      3,
+      "VAE"
+    ],
+    [
+      1074,
+      445,
+      0,
+      498,
+      4,
+      "SAMPLER"
+    ],
+    [
+      1075,
+      444,
+      0,
+      498,
+      5,
+      "SIGMAS"
+    ],
+    [
+      1076,
+      137,
+      0,
+      498,
+      7,
+      "IMAGE"
+    ],
+    [
+      1077,
+      466,
+      0,
+      498,
+      12,
+      "STRING"
+    ],
+    [
+      1078,
+      199,
+      0,
+      498,
+      13,
+      "INT"
+    ],
+    [
+      1079,
+      199,
+      1,
+      498,
+      14,
+      "INT"
+    ],
+    [
+      1080,
+      446,
+      1,
+      498,
+      15,
+      "INT"
+    ],
+    [
+      1081,
+      459,
+      1,
+      498,
+      16,
+      "INT"
+    ],
+    [
+      1083,
+      455,
+      0,
+      498,
+      17,
+      "INT"
+    ],
+    [
+      1084,
+      498,
+      0,
+      450,
+      0,
+      "VIDEO"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 5,
+      "title": "Setting",
+      "bounding": [
+        -1280,
+        5910,
+        280,
+        810
+      ],
+      "color": "#8A8",
+      "flags": {}
+    },
+    {
+      "id": 1,
+      "title": "Models",
+      "bounding": [
+        -960,
+        5910,
+        1480,
+        710
+      ],
+      "color": "#8AA",
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "Sampling",
+      "bounding": [
+        570,
+        5920,
+        330,
+        420
+      ],
+      "color": "#8AA",
+      "flags": {}
+    },
+    {
+      "id": 6,
+      "title": "Turbo",
+      "bounding": [
+        -960,
+        6890,
+        810,
+        260
+      ],
+      "color": "#88A",
+      "flags": {}
+    },
+    {
+      "id": 7,
+      "title": "Normal",
+      "bounding": [
+        -960,
+        6640,
+        400,
+        210
+      ],
+      "color": "#88A",
+      "flags": {}
+    },
+    {
+      "id": 9,
+      "title": "Segment time",
+      "bounding": [
+        -1280,
+        6740,
+        280,
+        420
+      ],
+      "color": "#8A8",
+      "flags": {}
+    },
+    {
+      "id": 10,
+      "title": "ref",
+      "bounding": [
+        -1280,
+        7230,
+        350,
+        590
+      ],
+      "color": "#8A8",
+      "flags": {}
+    },
+    {
+      "id": 11,
+      "title": "LatentUpScale",
+      "bounding": [
+        3030,
+        7870,
+        1050,
+        500
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 12,
+      "title": "MMH3 Ultimate Upscale",
+      "bounding": [
+        -1280,
+        7870,
+        4250,
+        1430
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "frontendVersion": "1.45.21",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": false,
+    "VHS_KeepIntermediate": true,
+    "favoritedWidgets": {
+      "favorites": [
+        {
+          "nodeLocatorId": "2c327c39-9fdb-488b-b28e-31fb698bc7d8:217",
+          "widgetName": "steps"
+        }
+      ]
+    },
+    "ds": {
+      "scale": 0.41756958975732017,
+      "offset": [
+        2949.9858608261143,
+        -6036.864716907652
+      ]
+    }
+  },
+  "version": 0.4
+}

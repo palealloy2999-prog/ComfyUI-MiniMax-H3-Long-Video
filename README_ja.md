@@ -77,7 +77,11 @@ output/h3_long_upscaled/
 
 ### MMH3 Ultimate Upscaleで再サンプリングする
 
-拡散モデルでLATENTを拡大・再サンプリングする場合は、追加した4つのループ補助ノードをEasyUseの `For Loop Start` / `For Loop End` および `MMH3 Ultimate Upscale` と組み合わせます。編集用サンプルは [`sample/minimax_h3_long_ultimate_loop.json`](sample/minimax_h3_long_ultimate_loop.json) です。
+拡散モデルでLATENTを拡大・再サンプリングする場合は、追加した4つのループ補助ノードをEasyUseの `For Loop Start` / `For Loop End` および `MMH3 Ultimate Upscale` と組み合わせます。編集用サンプルは [`sample/minimax_h3_r2v-longtime_upscale.json`](sample/minimax_h3_r2v-longtime_upscale.json) です。
+
+`MiniMax H3 Long Reference Sampler` の `master_path` は、`MiniMax H3 Long Upscale Prepare` の `master_path` に直接接続できます。手入力の場合はbundleフォルダーまたはその `manifest.json` も指定できます。
+
+最終bundleの保存先は、元bundle直下の `upscale/` を基準にします。例えば `h3_long_video/123/master.mp4` からは `h3_long_video/123/upscale/master.mp4` を作ります。すでに同名フォルダーがある場合は上書きせず、`upscale_2/`、`upscale_3/` のように増やします。ループ中はSegment SaveがComfyUI内部の一時フォルダーへ保存し、Assembleが処理済みチェックポイントとプロンプトを決定済みの出力先へ移した後、一時jobフォルダーを削除します。
 
 配線は `Prepare -> For Loop Start -> Segment Load -> MiniMax H3 Reference to Video -> MMH3 Ultimate Upscale -> Segment Save -> For Loop End -> Assemble` です。`segment_count` をループ回数へ、EasyUseの `index` を `segment_index` へ接続します。Segment Loadは、元LATENTに加えて、そのセグメントのローカルプロンプト、seed、元のwidth・height、生フレーム数を出力します。Segment Saveは処理済みLATENTをその場でSSDへ保存し、Loop Endには小さな進捗情報だけを渡します。全ループ完了後にAssembleが各チェックポイントを1本ずつデコードし、記録済みの継続用重複部分を除去して1本のMP4にします。
 

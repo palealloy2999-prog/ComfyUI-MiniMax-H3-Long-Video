@@ -7,6 +7,7 @@ import json
 import math
 import os
 import re
+import tempfile
 import time
 from fractions import Fraction
 from pathlib import Path
@@ -945,14 +946,12 @@ class MiniMaxH3LongUpscalePrepare(io.ComfyNode):
             node_id="MiniMaxH3LongUpscalePrepare",
             display_name="MiniMax H3 Long Upscale Prepare",
             category="sampling/minimax/long upscale",
-            description="Prepare a Long H3 bundle for segment-by-segment processing in an EasyUse For Loop.",
+            description="Prepare a Long H3 bundle and temporary segment storage for processing in an EasyUse For Loop.",
+            not_idempotent=True,
             inputs=[
-                io.String.Input("source_path", default="h3_long_video",
-                                tooltip="Long H3 bundle folder, manifest.json, or master.mp4 inside the ComfyUI output folder."),
-                io.String.Input("output_cache_name", default="h3_long_ultimate",
-                                tooltip="Output-relative folder for processed segment latents and master.mp4. Save Video patterns are supported."),
+                io.String.Input("master_path", default="h3_long_video/master.mp4",
+                                tooltip="Connect MiniMax H3 Long Reference Sampler's master_path, or enter a Long H3 bundle folder, manifest.json, or master.mp4 inside the ComfyUI output folder."),
             ],
-            hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo],
             outputs=[
                 LONG_H3_UPSCALE_JOB.Output("job"),
                 io.Int.Output("segment_count"),
@@ -960,19 +959,8 @@ class MiniMaxH3LongUpscalePrepare(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, source_path, output_cache_name):
-        hidden = cls.hidden
-        source_path = _expand_cache_name(
-            source_path,
-            hidden.prompt if hidden is not None else None,
-            hidden.extra_pnginfo if hidden is not None else None,
-        )
-        output_cache_name = _expand_cache_name(
-            output_cache_name,
-            hidden.prompt if hidden is not None else None,
-            hidden.extra_pnginfo if hidden is not None else None,
-        )
-        source, manifest_path = _source_bundle(source_path)
+    def execute(cls, master_path):
+        source, manifest_path = _source_bundle(master_path)
         with manifest_path.open("r", encoding="utf-8") as handle:
             source_manifest = json.load(handle)
         if source_manifest.get("latent_format") != "minimax_h3_av":
@@ -983,12 +971,13 @@ class MiniMaxH3LongUpscalePrepare(io.ComfyNode):
         source_height = source_manifest.get("height")
         if not isinstance(source_width, int) or not isinstance(source_height, int):
             raise ValueError("source Long H3 manifest has no valid resolution")
-        project, master_path, relative_folder = _output_paths(
-            output_cache_name, False, source_width, source_height)
-        if project == source:
-            raise ValueError("output_cache_name must be different from the source bundle")
+        temp_root = Path(folder_paths.get_temp_directory()).resolve()
+        temp_root.mkdir(parents=True, exist_ok=True)
+        project = Path(tempfile.mkdtemp(
+            prefix="minimax_h3_long_upscale_", dir=str(temp_root))).resolve()
+        (project / "latents").mkdir()
         prompt_directory = project / "prompts"
-        prompt_directory.mkdir(exist_ok=True)
+        prompt_directory.mkdir()
 
         source_entries = source_manifest["segments"]
         job_segments = []
@@ -1063,8 +1052,6 @@ class MiniMaxH3LongUpscalePrepare(io.ComfyNode):
         _atomic_json(project / "manifest.json", output_manifest)
         job = {
             "project": str(project),
-            "master_path": str(master_path),
-            "relative_folder": relative_folder,
             "segment_count": len(job_segments),
             "segments": job_segments,
         }
@@ -1111,8 +1098,6 @@ class MiniMaxH3LongSegmentLoad(io.ComfyNode):
             prompt = handle.read()
         token = dict(segment)
         token["project"] = job["project"]
-        token["master_path"] = job["master_path"]
-        token["relative_folder"] = job["relative_folder"]
         token["segment_count"] = job["segment_count"]
         return io.NodeOutput(
             latent, prompt, segment["seed"], segment["width"],
@@ -1178,8 +1163,6 @@ class MiniMaxH3LongSegmentSave(io.ComfyNode):
         _atomic_json(manifest_path, manifest)
         progress = {
             "project": str(project),
-            "master_path": segment["master_path"],
-            "relative_folder": segment["relative_folder"],
             "segment_count": segment["segment_count"],
             "last_index": index,
         }
@@ -1211,42 +1194,78 @@ class MiniMaxH3LongUpscaleAssemble(io.ComfyNode):
 
     @classmethod
     def execute(cls, progress, vae, audio_vae, crf):
-        project = Path(progress["project"])
-        manifest_path = project / "manifest.json"
-        with manifest_path.open("r", encoding="utf-8") as handle:
+        staging = Path(progress["project"]).resolve()
+        temp_root = Path(folder_paths.get_temp_directory()).resolve()
+        if (staging.parent != temp_root or
+                not staging.name.startswith("minimax_h3_long_upscale_") or
+                not folder_paths.is_within_directory(str(temp_root), str(staging))):
+            raise ValueError("processed Long H3 temporary job path is invalid")
+        staging_manifest_path = staging / "manifest.json"
+        with staging_manifest_path.open("r", encoding="utf-8") as handle:
             manifest = json.load(handle)
         entries = manifest.get("segments")
         count = progress.get("segment_count")
         if not isinstance(entries, list) or not isinstance(count, int) or len(entries) != count:
             raise ValueError("processed Long H3 manifest has an invalid segment count")
         segments = []
-        checkpoints = []
+        staging_checkpoints = []
+        staging_prompts = []
         for index, entry in enumerate(entries):
             if entry.get("index") != index or entry.get("status") != "saved":
                 raise ValueError("Long H3 segment {} has not been processed".format(index))
-            checkpoint = (project / "latents" / entry["file"]).resolve()
-            if checkpoint.parent != (project / "latents").resolve() or not checkpoint.is_file():
+            checkpoint = (staging / "latents" / entry["file"]).resolve()
+            if checkpoint.parent != (staging / "latents").resolve() or not checkpoint.is_file():
                 raise ValueError("processed Long H3 checkpoint is missing: {}".format(entry["file"]))
+            prompt = (staging / entry["prompt_file"]).resolve()
+            if (not folder_paths.is_within_directory(str(staging), str(prompt)) or
+                    not prompt.is_file()):
+                raise ValueError("processed Long H3 prompt is missing: {}".format(entry["prompt_file"]))
             segments.append(Segment(
                 index, int(entry["raw_frames"]), int(entry["context_frames"]),
                 int(entry["output_start"]), int(entry["output_frames"])))
-            checkpoints.append(checkpoint)
+            staging_checkpoints.append(checkpoint)
+            staging_prompts.append(prompt)
         width = manifest.get("width")
         height = manifest.get("height")
         if not isinstance(width, int) or not isinstance(height, int):
             raise ValueError("processed Long H3 segments have no output resolution")
-        master_path = Path(progress["master_path"])
+
+        output_root = Path(folder_paths.get_output_directory()).resolve()
+        source_name = manifest.get("source")
+        if not isinstance(source_name, str):
+            raise ValueError("processed Long H3 manifest has no source bundle path")
+        source = (output_root / source_name).resolve()
+        if (not folder_paths.is_within_directory(str(output_root), str(source)) or
+                not (source / "manifest.json").is_file()):
+            raise ValueError("processed Long H3 source bundle path is invalid")
+        output_cache_name = os.path.relpath(source / "upscale", output_root)
+        project, master_path, relative_folder = _output_paths(
+            output_cache_name, False, width, height)
+        prompt_directory = project / "prompts"
+        prompt_directory.mkdir(exist_ok=True)
+        checkpoints = []
+        for entry, staging_checkpoint, staging_prompt in zip(
+                entries, staging_checkpoints, staging_prompts):
+            checkpoint = project / "latents" / entry["file"]
+            os.replace(staging_checkpoint, checkpoint)
+            os.replace(staging_prompt, prompt_directory / staging_prompt.name)
+            checkpoints.append(checkpoint)
+
         manifest["status"] = "decoding"
-        _atomic_json(manifest_path, manifest)
+        _atomic_json(project / "manifest.json", manifest)
+        staging_manifest_path.unlink()
+        (staging / "latents").rmdir()
+        (staging / "prompts").rmdir()
+        staging.rmdir()
         _write_master(master_path, checkpoints, segments, vae, audio_vae, width, height, crf)
         last_latent, _ = _load_segment(checkpoints[-1])
         last_latent = _cpu_latent(last_latent)
         manifest["status"] = "complete"
         manifest["master"] = master_path.name
-        _atomic_json(manifest_path, manifest)
+        _atomic_json(project / "manifest.json", manifest)
         video = InputImpl.VideoFromFile(str(master_path))
         preview = ui.PreviewVideo([
-            ui.SavedResult(master_path.name, progress["relative_folder"], io.FolderType.output)
+            ui.SavedResult(master_path.name, relative_folder, io.FolderType.output)
         ])
         return io.NodeOutput(video, last_latent, str(master_path), count, ui=preview)
 

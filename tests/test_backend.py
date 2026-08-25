@@ -57,6 +57,16 @@ class BackendTests(unittest.TestCase):
         self.assertIn("target_width", upscale_inputs)
         self.assertIn("target_height", upscale_inputs)
 
+        prepare_schema = MiniMaxH3LongUpscalePrepare.define_schema()
+        prepare_inputs = [input.id for input in prepare_schema.inputs]
+        self.assertIn("master_path", prepare_inputs)
+        self.assertNotIn("source_path", prepare_inputs)
+        self.assertNotIn("output_cache_name", prepare_inputs)
+
+        assemble_schema = MiniMaxH3LongUpscaleAssemble.define_schema()
+        assemble_inputs = [input.id for input in assemble_schema.inputs]
+        self.assertNotIn("output_cache_name", assemble_inputs)
+
     def test_cache_name_expands_node_input_pattern(self):
         prompt = {
             "460": {
@@ -323,11 +333,17 @@ class BackendTests(unittest.TestCase):
                 captured.append((len(checkpoints), len(planned), width, height))
                 path.write_bytes(b"mp4")
 
+            def fake_output_paths(cache_name, resume, width, height):
+                self.assertEqual(cache_name, str(Path("source") / "upscale"))
+                self.assertFalse(resume)
+                return destination, destination / "master.mp4", "source/upscale"
+
             patches = (
                 mock.patch.object(long_nodes.folder_paths, "get_output_directory", return_value=directory),
+                mock.patch.object(long_nodes.folder_paths, "get_temp_directory", return_value=directory),
                 mock.patch.object(
                     long_nodes, "_output_paths",
-                    return_value=(destination, destination / "master.mp4", "ultimate"),
+                    side_effect=fake_output_paths,
                 ),
                 mock.patch.object(long_nodes, "_write_master", side_effect=fake_master),
             )
@@ -336,9 +352,11 @@ class BackendTests(unittest.TestCase):
             try:
                 destination.mkdir()
                 (destination / "latents").mkdir()
-                prepared = MiniMaxH3LongUpscalePrepare.execute(str(source), "ultimate")
+                prepared = MiniMaxH3LongUpscalePrepare.execute(str(source))
                 job, count = prepared[0], prepared[1]
                 self.assertEqual(count, 2)
+                staging = Path(job["project"])
+                self.assertTrue(staging.is_dir())
                 progress = None
                 for index in range(count):
                     loaded = MiniMaxH3LongSegmentLoad.execute(job, index)
@@ -358,6 +376,7 @@ class BackendTests(unittest.TestCase):
                     progress, VideoVAE(), AudioVAE(), 28)
                 self.assertEqual(assembled[3], 2)
                 self.assertEqual(captured, [(2, 2, 64, 64)])
+                self.assertFalse(staging.exists())
                 manifest = json.loads((destination / "manifest.json").read_text(encoding="utf-8"))
                 self.assertEqual(manifest["status"], "complete")
                 self.assertTrue(all(item["status"] == "saved" for item in manifest["segments"]))

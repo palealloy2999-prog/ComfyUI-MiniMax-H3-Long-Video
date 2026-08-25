@@ -58,7 +58,11 @@ output/h3_long_upscaled/
 
 ### Diffusion re-sampling with MMH3 Ultimate Upscale
 
-For diffusion-based latent enlargement, use the four loop support nodes with EasyUse's `For Loop Start` / `For Loop End` and `MMH3 Ultimate Upscale`. A ready-to-edit graph is included at [`sample/minimax_h3_long_ultimate_loop.json`](sample/minimax_h3_long_ultimate_loop.json).
+For diffusion-based latent enlargement, use the four loop support nodes with EasyUse's `For Loop Start` / `For Loop End` and `MMH3 Ultimate Upscale`. A ready-to-edit graph is included at [`sample/minimax_h3_r2v-longtime_upscale.json`](sample/minimax_h3_r2v-longtime_upscale.json).
+
+Connect `MiniMax H3 Long Reference Sampler.master_path` directly to `MiniMax H3 Long Upscale Prepare.master_path`. A bundle folder or its `manifest.json` is also accepted when entered manually.
+
+The final bundle path starts at `upscale/` under the source bundle. For example, `h3_long_video/123/master.mp4` produces `h3_long_video/123/upscale/master.mp4`. If that folder already exists, a new `upscale_2/`, `upscale_3/`, and so on is created instead of overwriting it. Segment Save uses an internal ComfyUI temporary folder while the loop is running; after Assemble moves the processed checkpoints and prompts into the selected output bundle, the temporary job folder is removed.
 
 The loop wiring is `Prepare -> For Loop Start -> Segment Load -> MiniMax H3 Reference to Video -> MMH3 Ultimate Upscale -> Segment Save -> For Loop End -> Assemble`. `segment_count` drives the loop and EasyUse's `index` drives `segment_index`. The loader emits exactly one source latent plus its segment-local prompt, seed, source width and height, and raw frame count. The save node writes the processed latent to SSD immediately; only a small progress value is carried through Loop End. Assemble starts after the final iteration, decodes the saved checkpoints one at a time, removes the recorded continuation overlap, and writes one MP4.
 
