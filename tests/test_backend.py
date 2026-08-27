@@ -45,10 +45,15 @@ class BackendTests(unittest.TestCase):
         schema = long_nodes.MiniMaxH3LongReferenceSampler.define_schema()
         input_ids = [input.id for input in schema.inputs]
         self.assertIn("cache_name", input_ids)
+        self.assertIn("prompt_plan", input_ids)
         self.assertNotIn("filename_prefix", input_ids)
         self.assertIn(long_nodes.io.Hidden.prompt, schema.hidden)
         self.assertIn(long_nodes.io.Hidden.extra_pnginfo, schema.hidden)
         self.assertIn(long_nodes.io.Hidden.unique_id, schema.hidden)
+
+        planner_schema = long_nodes.MiniMaxH3LongPromptPlanner.define_schema()
+        self.assertEqual(planner_schema.outputs[1].id, "preview")
+        self.assertTrue(planner_schema.outputs[1].is_output_list)
 
         upscale_schema = MiniMaxH3LongLatentUpscale.define_schema()
         upscale_inputs = [input.id for input in upscale_schema.inputs]
@@ -68,6 +73,37 @@ class BackendTests(unittest.TestCase):
         assemble_schema = MiniMaxH3LongUpscaleAssemble.define_schema()
         assemble_inputs = [input.id for input in assemble_schema.inputs]
         self.assertNotIn("output_cache_name", assemble_inputs)
+
+    def test_prompt_planner_builds_and_overrides_exact_local_prompts(self):
+        prompt = (
+            "[Shot 1] Start. "
+            "[Shot 2] At 00:03.000, first action. "
+            "[Shot 3] At 00:15.000, second segment. "
+            "[Shot 4] At 00:19.000, later action."
+        )
+        result = long_nodes.MiniMaxH3LongPromptPlanner.execute(
+            prompt, 736, 362, "39", False,
+            {"segment_prompt_1": "[Shot 1] Manually revised second segment."},
+        )
+        plan, preview, count = result
+        self.assertEqual(count, 2)
+        self.assertIn("[Shot 2] At 00:03.000, first action", plan["segments"][0]["prompt"])
+        self.assertEqual(
+            plan["segments"][1]["prompt"],
+            "[Shot 1] Manually revised second segment.",
+        )
+        self.assertIsInstance(preview, list)
+        self.assertEqual(len(preview), 2)
+        self.assertEqual(preview, [entry["prompt"] for entry in plan["segments"]])
+        self.assertIn("[Shot 2] At 00:03.000, first action", preview[0])
+        self.assertEqual(preview[1], "[Shot 1] Manually revised second segment.")
+        segments = plan_segments(736, 39, False, 362)
+        self.assertEqual(
+            timeline.prompt_plan_prompts(plan, segments, 736, 362, 39, False),
+            [entry["prompt"] for entry in plan["segments"]],
+        )
+        with self.assertRaisesRegex(ValueError, "settings do not match"):
+            timeline.prompt_plan_prompts(plan, segments, 736, 362, 22, False)
 
     def test_cache_name_expands_node_input_pattern(self):
         prompt = {
@@ -488,8 +524,8 @@ class BackendTests(unittest.TestCase):
                 self.assertEqual(manifest["latent_format"], "minimax_h3_av")
                 self.assertEqual(manifest["schema"], long_nodes.SCHEMA_VERSION)
                 self.assertIn("generation_fingerprint", manifest)
-                self.assertEqual(manifest["segments"][1]["output_start"], 345)
-                self.assertEqual(manifest["segments"][1]["output_frames"], 15)
+                self.assertEqual(manifest["segments"][1]["output_start"], 336)
+                self.assertEqual(manifest["segments"][1]["output_frames"], 24)
 
                 second = long_nodes.MiniMaxH3LongReferenceSampler.execute(
                     None, None, VideoVAE(), AudioVAE(), "A continuous shot", 32, 32, 360,

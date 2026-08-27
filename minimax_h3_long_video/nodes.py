@@ -26,13 +26,21 @@ from comfy_extras import nodes_minimax_h3 as h3
 from comfy_extras.nodes_audio import vae_decode_audio
 from typing_extensions import override
 
-from .timeline import FPS, Segment, plan_segments, slice_prompt
+from .timeline import (
+    FPS,
+    Segment,
+    build_prompt_plan,
+    plan_segments,
+    prompt_plan_prompts,
+    slice_prompt,
+)
 
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 UPSCALE_SCHEMA_VERSION = 1
 LOOP_UPSCALE_SCHEMA_VERSION = 2
 
+LONG_H3_PROMPT_PLAN = io.Custom("MINIMAX_H3_LONG_PROMPT_PLAN")
 LONG_H3_UPSCALE_JOB = io.Custom("MINIMAX_H3_LONG_UPSCALE_JOB")
 LONG_H3_SEGMENT = io.Custom("MINIMAX_H3_LONG_SEGMENT")
 LONG_H3_UPSCALE_PROGRESS = io.Custom("MINIMAX_H3_LONG_UPSCALE_PROGRESS")
@@ -781,6 +789,60 @@ def _write_master(path, segment_paths, segments, vae, audio_vae, width, height, 
         raise
 
 
+class MiniMaxH3LongPromptPlanner(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3LongPromptPlanner",
+            display_name="MiniMax H3 Long Prompt Planner",
+            category="sampling/minimax/long video",
+            description=(
+                "Build and optionally override the exact segment prompts consumed by "
+                "MiniMax H3 Long Reference Sampler."
+            ),
+            inputs=[
+                io.String.Input(
+                    "master_prompt", multiline=True, dynamic_prompts=True,
+                    tooltip="Long master prompt containing the global [Shot N] timeline."),
+                io.Int.Input("length", default=720, min=24, max=86400, step=1,
+                             tooltip="Use the same length as the sampler."),
+                io.Int.Input("max_raw_frames", default=124, min=73, max=362, step=17,
+                             tooltip="Use the same H3-grid segment value as the sampler."),
+                io.Combo.Input("context_frames", options=["22", "39"], default="22",
+                               tooltip="Use the same continuation context as the sampler."),
+                io.Boolean.Input(
+                    "has_initial_latent", default=False, advanced=True,
+                    tooltip="Enable only when the sampler's initial_latent will be connected."),
+                io.Autogrow.Input(
+                    "segment_prompts", optional=True,
+                    template=io.Autogrow.TemplatePrefix(
+                        input=io.String.Input(
+                            "segment_prompt", multiline=True,
+                            tooltip="Optional complete replacement for this local segment prompt."),
+                        prefix="segment_prompt_", min=0, max=64,
+                    ),
+                ),
+            ],
+            outputs=[
+                LONG_H3_PROMPT_PLAN.Output("prompt_plan"),
+                io.String.Output(
+                    "preview", is_output_list=True,
+                    tooltip="Ordered STRING list containing one exact local prompt per segment."),
+                io.Int.Output("segment_count"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, master_prompt, length, max_raw_frames, context_frames,
+                has_initial_latent=False, segment_prompts=None):
+        plan = build_prompt_plan(
+            master_prompt, length, max_raw_frames, context_frames,
+            has_initial_latent, segment_prompts)
+        preview = [entry["prompt"] for entry in plan["segments"]]
+        return io.NodeOutput(
+            plan, preview, len(plan["segments"]))
+
+
 class MiniMaxH3LongReferenceSampler(io.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -796,13 +858,13 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
                 io.Vae.Input("audio_vae"),
                 io.String.Input(
                     "prompt", multiline=True, dynamic_prompts=True,
-                    tooltip="Use a timestamped [Shot N] timeline. Put reusable instructions after the final Shot under a standalone [Global Instructions] line so every segment receives them."),
+                    tooltip="Use a timestamped master timeline, or connect prompt_plan to use prebuilt local prompts."),
                 io.Int.Input("width", default=1344, min=32, max=4096, step=32),
                 io.Int.Input("height", default=768, min=32, max=4096, step=32),
                 io.Int.Input("length", default=720, min=24, max=86400, step=1,
-                             tooltip="Delivered frames at 24 fps. 720 frames = 30 seconds."),
+                             tooltip="Total timeline frames at 24 fps. Accepts either 720 or its H3-grid form 736 as 30 seconds."),
                 io.Int.Input("max_raw_frames", default=124, min=73, max=362, step=17,
-                             tooltip="Maximum generated frames per segment on H3's 17k+5 grid. 73 is ~3.0s, 90 is 3.75s, 107 is ~4.5s, and 124 is ~5.2s at 24 fps."),
+                             tooltip="H3-grid segment value reversed to its intended duration when possible. 362 means a 15-second timeline window. AV guide frames and H3 padding are added internally."),
                 io.Combo.Input("context_frames", options=["22", "39"], default="22",
                                tooltip="Previous sampled AV latent generated as a guide at the start of each continuation segment. Guided frames are removed from the delivered video."),
                 io.Int.Input("noise_seed", default=0, min=0, max=0xffffffffffffffff, control_after_generate=True,
@@ -832,6 +894,9 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
                 io.Autogrow.Input("ref_audios", optional=True,
                     template=io.Autogrow.TemplatePrefix(
                         input=io.Audio.Input("ref_audio"), prefix="ref_audio_", min=0, max=3)),
+                LONG_H3_PROMPT_PLAN.Input(
+                    "prompt_plan", optional=True,
+                    tooltip="Optional exact local prompts from MiniMax H3 Long Prompt Planner. When connected, these replace internal prompt splitting."),
             ],
             hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo, io.Hidden.unique_id],
             outputs=[
@@ -846,7 +911,8 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
     def execute(cls, model, clip, vae, audio_vae, prompt, width, height, length, max_raw_frames,
                 context_frames, noise_seed, sampler, sigmas, cache_name, resume,
                 reroll_from_segment, crf, ref_image_size="match", initial_latent=None,
-                ref_images=None, ref_videos=None, ref_video_audios=None, ref_audios=None):
+                ref_images=None, ref_videos=None, ref_video_audios=None, ref_audios=None,
+                prompt_plan=None):
         if width % 32 or height % 32:
             raise ValueError("width and height must be multiples of 32")
         context_frames = int(context_frames)
@@ -869,20 +935,26 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
             initial_latent, ref_images, ref_videos, ref_video_audios, ref_audios)
         segments = plan_segments(
             length, context_frames, initial_latent is not None, max_raw_frames)
+        delivered_length = sum(segment.output_frames for segment in segments)
         project, master_path, relative_folder = _output_paths(cache_name, resume, width, height)
         segment_paths = [project / "latents" / "segment_{:04d}.safetensors".format(segment.index) for segment in segments]
-        local_prompts = [
-            slice_prompt(
-                prompt,
-                segment.prompt_start_seconds,
-                segment.prompt_end_seconds,
-                segment.context_frames / FPS,
-                segment.index,
-                len(segments),
-                length / FPS,
-            )
-            for segment in segments
-        ]
+        if prompt_plan is not None:
+            local_prompts = prompt_plan_prompts(
+                prompt_plan, segments, length, max_raw_frames, context_frames,
+                initial_latent is not None)
+        else:
+            local_prompts = [
+                slice_prompt(
+                    prompt,
+                    segment.prompt_start_seconds,
+                    segment.prompt_end_seconds,
+                    segment.context_frames / FPS,
+                    segment.index,
+                    len(segments),
+                    delivered_length / FPS,
+                )
+                for segment in segments
+            ]
         if resume:
             _validate_preserved_segments(
                 segment_paths, segments, local_prompts, reroll_from_segment,
@@ -902,10 +974,12 @@ class MiniMaxH3LongReferenceSampler(io.ComfyNode):
             "latent_format": "minimax_h3_av",
             "width": width,
             "height": height,
-            "length": length,
+            "length": delivered_length,
+            "length_input": length,
             "max_raw_frames": max_raw_frames,
             "context_frames": context_frames,
             "seed": noise_seed,
+            "prompt_source": "plan" if prompt_plan is not None else "master",
             "generation_fingerprint": generation_fingerprint,
             "segments": [],
         }
@@ -1580,6 +1654,7 @@ class MiniMaxH3LongVideoExtension(ComfyExtension):
     @override
     async def get_node_list(self):
         return [
+            MiniMaxH3LongPromptPlanner,
             MiniMaxH3LongReferenceSampler,
             MiniMaxH3LongLatentUpscale,
             MiniMaxH3LongUpscalePrepare,
